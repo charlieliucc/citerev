@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "author-date-example",
+  "name": "独立作者-年份样式示例",
+  "version": "1.0.0",
+  "ruleType": "independent",
+  "description": "独立 JSON 引用体系示例；不继承 APA 7。",
+  "config": {
+    "headingKeywords": ["references", "bibliography", "参考文献"],
+    "nonRefMarkers": ["appendix", "附录"],
+    "referenceOrder": "author-year",
+    "referenceTypeLabel": "参考文献",
+    "ignoreLeadingArticles": ["a", "an", "the"]
+  },
+  "rules": {
+    "reference": [
+      {
+        "id": "year-required",
+        "pattern": "\\b(?:19|20)\\d{2}\\b",
+        "condition": "mustMatch",
+        "severity": "bad",
+        "label": "年份",
+        "message": "该样式要求参考文献包含四位年份。"
+      }
+    ],
+    "inTextStructural": [],
+    "inTextStyle": []
+  }
+}

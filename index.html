@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>引用审查 · 离线运行的引用与参考文献校对工具</title>
+<meta name="description" content="引用审查是一款离线运行、安全可控、完全免费的引用与参考文献校对工具，支持网页端、Windows 端与 macOS 端（M 芯片）下载。" />
+<style>
+  :root {
+    --bg: #f6f8fc;
+    --bg-soft: #ffffff;
+    --card: #ffffff;
+    --line: #e2e8f2;
+    --fg: #1c2430;
+    --fg-soft: #5b6678;
+    --brand: #3a6df0;
+    --brand-2: #6a4bf0;
+    --accent: #11a06d;
+    --warn: #f5652f;
+    --radius: 16px;
+    --maxw: 1080px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.82);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+  .logo .dot {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display: grid; place-items: center; font-size: 15px;
+  }
+  .nav-links { display: flex; gap: 28px; color: var(--fg-soft); font-size: 14px; }
+  .nav-links a:hover { color: var(--fg); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    color: #fff; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  }
+
+  /* Hero */
+  .hero { padding: 88px 0 64px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% -10% auto -10%; height: 480px;
+    background: radial-gradient(600px 300px at 50% 0%, rgba(58,109,240,0.16), transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line); background: var(--bg-soft);
+    color: var(--fg-soft); padding: 6px 14px; border-radius: 999px; font-size: 13px; margin-bottom: 22px;
+  }
+  .badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(40,192,138,0.6); animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(40,192,138,0.5);} 70% { box-shadow: 0 0 0 10px rgba(40,192,138,0);} 100% { box-shadow: 0 0 0 0 rgba(40,192,138,0);} }
+  .hero h1 { font-size: 52px; line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 18px; }
+  .hero h1 .grad { background: linear-gradient(135deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.sub { color: var(--fg-soft); font-size: 18px; max-width: 640px; margin: 0 auto 34px; }
+  .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 26px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; border: 1px solid transparent;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; }
+  .btn-ghost { background: var(--bg-soft); border-color: var(--line); color: var(--fg); }
+
+  /* Trust strip */
+  .trust { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
+  .trust .item { display: flex; align-items: center; gap: 10px; color: var(--fg-soft); font-size: 14px; }
+  .trust .item b { color: var(--fg); font-weight: 600; }
+
+  /* Section base */
+  section { padding: 72px 0; }
+  .sec-head { text-align: center; margin-bottom: 44px; }
+  .sec-head .eyebrow { color: var(--brand); font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .sec-head h2 { font-size: 34px; margin: 10px 0 12px; letter-spacing: -0.3px; }
+  .sec-head p { color: var(--fg-soft); max-width: 560px; margin: 0 auto; }
+
+  /* Selling points */
+  .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .point {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px;
+  }
+  .point .ico {
+    width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; margin-bottom: 16px;
+    background: rgba(91,140,255,0.12); color: var(--brand);
+  }
+  .point h3 { font-size: 18px; margin-bottom: 8px; }
+  .point p { color: var(--fg-soft); font-size: 14.5px; }
+
+  /* Download cards */
+  .dl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+  .dl-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px;
+    display: flex; flex-direction: column;
+  }
+  .dl-card.feature { border-color: rgba(58,109,240,0.55); box-shadow: 0 0 0 1px rgba(58,109,240,0.18), 0 18px 40px -22px rgba(58,109,240,0.45); }
+  .dl-card .tag { align-self: flex-start; font-size: 12px; color: var(--accent); background: rgba(40,192,138,0.12); padding: 3px 10px; border-radius: 999px; margin-bottom: 14px; }
+  .dl-card .os { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .dl-card .os .os-ico { font-size: 26px; }
+  .dl-card .desc { color: var(--fg-soft); font-size: 14px; margin: 12px 0 18px; min-height: 42px; }
+  .dl-list { list-style: none; margin: 0 0 20px; display: grid; gap: 8px; }
+  .dl-list li { font-size: 13.5px; color: var(--fg-soft); display: flex; gap: 8px; align-items: flex-start; }
+  .dl-list li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+  .dl-btn {
+    margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 14.5px;
+    background: var(--bg-soft); border: 1px solid var(--line); color: var(--fg); cursor: pointer; text-align: center;
+  }
+  .dl-btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); border: none; color: #fff; }
+  .dl-btn small { display: block; font-weight: 400; font-size: 11.5px; color: var(--fg-soft); margin-top: 3px; }
+  .dl-btn.primary small { color: rgba(255,255,255,0.8); }
+
+  /* Features deep */
+  .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .feat {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px;
+    display: flex; gap: 16px;
+  }
+  .feat .fi { font-size: 22px; flex: 0 0 auto; }
+  .feat h4 { font-size: 16px; margin-bottom: 6px; }
+  .feat p { color: var(--fg-soft); font-size: 14px; }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .step { text-align: center; padding: 10px; }
+  .step .n { width: 40px; height: 40px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: linear-gradient(135deg,var(--brand),var(--brand-2)); color: #fff; }
+  .step h4 { font-size: 17px; margin-bottom: 6px; }
+  .step p { color: var(--fg-soft); font-size: 14px; }
+
+  /* FAQ */
+  .faq { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+  .faq details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px; }
+  .faq summary { cursor: pointer; padding: 14px 0; font-weight: 600; font-size: 15px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--brand); font-size: 20px; }
+  .faq details[open] summary::after { content: "−"; }
+  .faq p { color: var(--fg-soft); font-size: 14px; padding: 0 0 16px; }
+
+  /* CTA band */
+  .cta-band {
+    background: linear-gradient(135deg, rgba(91,140,255,0.14), rgba(124,92,255,0.14));
+    border: 1px solid var(--line); border-radius: 20px; padding: 48px 32px; text-align: center;
+  }
+  .cta-band h2 { font-size: 30px; margin-bottom: 12px; }
+  .cta-band p { color: var(--fg-soft); margin-bottom: 26px; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--fg-soft); font-size: 13px; }
+  .foot-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+
+  @media (max-width: 860px) {
+    .points, .dl-grid, .feat-grid, .steps { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .hero h1 { font-size: 38px; }
+    .hero p.sub { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <div class="logo"><span class="dot">🔎</span> 引用审查 Citation Reviewer</div>
+    <nav class="nav-links">
+      <a href="#points">特性</a>
+      <a href="#download">下载</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <a class="nav-cta" href="#download">免费下载</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <span class="badge"><span class="pulse"></span> 离线可用 · 数据安全 · 免费开源</span>
+    <h1>让每一篇论文的引用<br><span class="grad">都经得起审查</span></h1>
+    <p class="sub">引用审查桌面版可在本地自动识别论文引用不规范之处，提供多维度统计。</p>
+
+    
+     <div class="hero-cta">
+      <a class="btn btn-primary" href="#download">⬇ 立即下载</a>
+      <a class="btn btn-ghost" href="https://github.com/">⭐ 在 GitHub 查看</a>
+    </div>
+   
+  </div>
+</section>
+
+<!-- FEATURES (replaces selling points) -->
+<section id="points">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">能力</div>
+      <h2>不止于「找错」</h2>
+      <p>自动拆分正文与参考文献，颜色标注问题，并给出多维度的引用统计。</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><div class="fi">🔴</div><div><h4>缺失引用高亮</h4><p>自动识别正文被引用却缺失、或参考文献未被引用的条目，红色重点标注。</p></div></div>
+      <div class="feat"><div class="fi">🟠</div><div><h4>孤立文献检测</h4><p>参考文献列表中存在却从未在正文中被引用的文献，橙色提示。</p></div></div>
+      <div class="feat"><div class="fi">🟡</div><div><h4>格式规范检查</h4><p>对照 APA 7 等规则，检查年份、作者、期刊等格式问题，黄色标记待修正。</p></div></div>
+      <div class="feat"><div class="fi">📊</div><div><h4>多维度统计</h4><p>汇总引用次数、发表年份分布、期刊来源等，一眼掌握文献使用全貌。</p></div></div>
+      <div class="feat"><div class="fi">📑</div><div><h4>Word 原生集成</h4><p>直接在文档内高亮，无需导出复制（macOS 适用）。</p></div></div>
+      <div class="feat"><div class="fi">⚙️</div><div><h4>规则可扩展</h4><p>提供规则 API，可按需扩展引用规范与学科定制检查逻辑。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">下载</div>
+      <h2>选择你的平台</h2>
+      <p>同一套审查引擎，三种使用方式。所有版本均离线运行、免费、不开会员。</p>
+    </div>
+    <div class="dl-grid">
+
+      <!-- Web -->
+      <div class="dl-card">
+        <div class="os"><span class="os-ico">🌐</span> 网页端（轻量版）</div>
+        <p class="desc">免安装，浏览器打开即用。不适合处理需要隐私。</p>
+        <ul class="dl-list">
+          <li>跨平台，无需下载</li>
+          <li>适合小型测试</li>
+          
+        </ul>
+        <a class="dl-btn" href="#">打开网页版 <small>浏览器访问，即开即用</small></a>
+      </div>
+
+      <!-- Windows -->
+      <div class="dl-card">
+        <div class="os"><span class="os-ico">🪟</span> Windows 端（桌面版）</div>
+        <p class="desc">Electron 打包的独立桌面 App。</p>
+        <ul class="dl-list">
+          <li>与网页版功能一致</li>
+          <li>支持断网运行</li>
+          <li>不留存数据、不发送数据</li>
+        </ul>
+        <a class="dl-btn" href="#">下载 Windows 版</a>
+      </div>
+
+      <!-- macOS -->
+      <div class="dl-card">
+        <div class="os"><span class="os-ico">🍎</span> macOS 端（桌面版）</div>
+        <p class="desc">原生App，可直接打开Word使用</p>
+        <ul class="dl-list">
+          <li>原生 .dmg 安装包</li>
+          <li>完整支持 Apple M 系列芯片</li>
+          <li>离线运行、无后台上传</li>
+        </ul>
+        <a class="dl-btn" href="#">下载 macOS 版 <small>Apple Silicon · .dmg</small></a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">上手</div>
+      <h2>三步完成一次审查</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h4>下载并打开</h4><p>选择对应平台安装，或直接在网页端打开文档。</p></div>
+      <div class="step"><div class="n">2</div><h4>载入文档</h4><p>导入文档（macOS打开文档）开始检查。</p></div>
+      <div class="step"><div class="n">3</div><h4>查看与修正</h4><p>按颜色标注逐条核对，参考统计报告完善文献列表。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">FAQ</div>
+      <h2>你可能想问</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>「离线运行」到底是什么意思？</summary>
+        <p>所有引用与参考文献的检测逻辑都在你的本机完成，文档内容不会上传到任何服务器。部分版本首次使用需联网下载程序文件，之后可离线工作。</p>
+      </details>
+      <details>
+        <summary>我的论文安全吗？</summary>
+        <p>安全。引用审查只读取你主动打开的文档，不会将内容发送至外部网络，适合处理未发表的稿件与敏感资料。</p>
+      </details>
+      <details>
+        <summary>macOS 版支持 Intel 芯片吗？</summary>
+        <p>当前主推的桌面 App 针对 Apple Silicon（M1/M2/M3）优化。如需 Intel 版本可在下载区或仓库 issues 中反馈，我们会据需求补充构建。</p>
+      </details>
+      <details>
+        <summary>支持哪些引用格式？</summary>
+        <p>内置 APA 7 ，并提供开放规则定制，可自行根据csl文件按学科与期刊要求扩展自定义检查规则。</p>
+      </details>
+      <details>
+        <summary>真的完全免费吗？</summary>
+        <p>是的。个人与学术用途永久免费，无订阅、无字数上限、无广告，开放透明。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BAND -->
+<section>
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>现在就开始，给你的论文做一次离线审查</h2>
+      <p>免费、本地、安全 —— 三种平台，总有一款适合你。</p>
+      <a class="btn btn-primary" href="#download">⬇ 免费下载引用审查</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-inner">
+    <div>© 引用审查 · 离线运行 · 安全可控 · 免费使用</div>
+    <div>网页端 · Windows 端 · macOS 端（Apple Silicon）</div>
+  </div>
+</footer>
+
+</body>
+</html>

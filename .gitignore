@@ -1,0 +1,12 @@
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Build artifacts (macOS Swift)
+macOS/.build/
+**/.build/
+
+# Node / Electron
+node_modules/
+dist/
+*.log

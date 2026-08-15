@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "journal-example",
+  "name": "期刊规则示例",
+  "version": "1.0.0",
+  "baseStyle": "apa7",
+  "description": "APA 7 参数覆盖示例；未填写的参数自动继承 APA 7。",
+  "config": { "headingKeywords": ["references", "参考文献"] }
+}

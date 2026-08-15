@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "apa7",
+  "name": "APA 7th",
+  "version": "1.0.0",
+  "description": "Built-in APA 7 parameter profile",
+  "config": {
+    "headingKeywords": ["references", "reference list", "references cited", "bibliography", "bibliographies", "works cited", "works consulted", "literature cited", "sources consulted", "sources referenced"],
+    "nonRefMarkers": ["response to feedback", "本次修改", "本次修订", "修订", "修改", "反馈", "reviewer", "comment", "comments", "revision", "editor's comment", "note", "说明", "回复"],
+    "ignoreLeadingArticles": ["a", "an", "the"],
+    "etAlThreshold": 3,
+    "narrativeUsesAnd": true,
+    "useAmpersandForLastTwo": true,
+    "noEtAlInRefList": true,
+    "doiUrlPrefix": "https://doi.org/",
+    "pageNotation": "pp."
+  }
+}

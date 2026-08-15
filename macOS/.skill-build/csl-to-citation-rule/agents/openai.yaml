@@ -1,0 +1,4 @@
+interface:
+  display_name: "CSL 转引用规则"
+  short_description: "根据 CSL、编写指南和论文样例生成可导入规则 JSON"
+  default_prompt: "使用 $csl-to-citation-rule 分析 CSL 和论文样例，生成可导入引用审查 App 的规则 JSON。"
