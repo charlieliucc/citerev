@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menu: NSMenu!
     private var quitHotKey: EventHotKeyRef?
     private var hideHotKey: EventHotKeyRef?
+    private var closeHotKey: EventHotKeyRef?
     private var hotKeyHandler: EventHandlerRef?
     private var globalKeyMonitor: Any?
     private var localKeyMonitor: Any?
@@ -16,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private enum HotKeyID: UInt32 {
         case quit = 1
         case hide = 2
+        case close = 3
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -32,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let quitHotKey { UnregisterEventHotKey(quitHotKey) }
         if let hideHotKey { UnregisterEventHotKey(hideHotKey) }
+        if let closeHotKey { UnregisterEventHotKey(closeHotKey) }
         if let hotKeyHandler { RemoveEventHandler(hotKeyHandler) }
         if let globalKeyMonitor { NSEvent.removeMonitor(globalKeyMonitor) }
         if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
@@ -52,14 +55,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @discardableResult
     private func handleControlShortcut(_ event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard modifiers.contains(.control), !modifiers.contains(.command), !modifiers.contains(.option),
-              let key = event.charactersIgnoringModifiers?.lowercased() else { return false }
-        switch key {
-        case "q":
+        guard modifiers.contains(.control),
+              !modifiers.contains(.command),
+              !modifiers.contains(.option) else { return false }
+
+        // Control 组合键的 charactersIgnoringModifiers 在部分输入法/键盘布局下
+        // 可能是控制字符（例如 Ctrl+W 为 U+0017），因此使用物理键码识别。
+        switch Int(event.keyCode) {
+        case kVK_ANSI_Q:
             DispatchQueue.main.async { [weak self] in self?.quitApp() }
             return true
-        case "h":
+        case kVK_ANSI_H:
             DispatchQueue.main.async { [weak self] in self?.hideWindow() }
+            return true
+        case kVK_ANSI_W:
+            DispatchQueue.main.async { [weak self] in
+                self?.closeWindow()
+            }
             return true
         default:
             return false
@@ -90,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 switch HotKeyID(rawValue: hotKeyID.id) {
                 case .quit: delegate.quitApp()
                 case .hide: delegate.hideWindow()
+                case .close: delegate.closeWindow()
                 case .none: break
                 }
             }
@@ -107,10 +120,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let signature: OSType = 0x43495445 // "CITE"
         let quitID = EventHotKeyID(signature: signature, id: HotKeyID.quit.rawValue)
         let hideID = EventHotKeyID(signature: signature, id: HotKeyID.hide.rawValue)
+        let closeID = EventHotKeyID(signature: signature, id: HotKeyID.close.rawValue)
         RegisterEventHotKey(UInt32(kVK_ANSI_Q), UInt32(controlKey), quitID,
                             GetApplicationEventTarget(), 0, &quitHotKey)
         RegisterEventHotKey(UInt32(kVK_ANSI_H), UInt32(controlKey), hideID,
                             GetApplicationEventTarget(), 0, &hideHotKey)
+        RegisterEventHotKey(UInt32(kVK_ANSI_W), UInt32(controlKey), closeID,
+                            GetApplicationEventTarget(), 0, &closeHotKey)
     }
 
     /// 设置 Dock 栏图标（使用 1024×1024 标准尺寸，与系统其他 app 一致）
@@ -135,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem.button else { return }
         button.image = makeMenuBarImage()
         button.imagePosition = .imageOnly
-        button.toolTip = "引用审查（左键打开审查窗口，右键菜单）"
+        button.toolTip = "CiteRev（左键打开审查窗口，右键菜单）"
 
         // 关键：不把 menu 赋给 statusItem.menu，否则会拦截所有点击。
         // 改为 button.action 处理左键（打开窗口）与右键（弹出菜单）。
@@ -158,19 +174,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registerAppMenu()
     }
 
-    /// 注册一个最小的主菜单，让 Cmd+Q / Ctrl+Q 等系统级快捷键有归属
+    /// 注册主菜单。Cmd+W 使用 macOS 原生菜单分发；Ctrl+W 由热键监听兼容。
     private func registerAppMenu() {
         let mainMenu = NSMenu()
         // 应用菜单（第一个菜单名为 app 名称）
         let appMenuItem = NSMenuItem()
-        let appMenu = NSMenu(title: "引用审查")
+        let appMenu = NSMenu(title: "CiteRev")
         let hideWindowItem = NSMenuItem(title: "隐藏审查窗口",
                                         action: #selector(hideWindow),
                                         keyEquivalent: "h")
         hideWindowItem.keyEquivalentModifierMask = [.command]
         hideWindowItem.target = self
         appMenu.addItem(hideWindowItem)
-        let quitAppItem = NSMenuItem(title: "退出引用审查",
+        let quitAppItem = NSMenuItem(title: "退出 CiteRev",
                                       action: #selector(quitApp),
                                       keyEquivalent: "q")
         quitAppItem.keyEquivalentModifierMask = [.command]
@@ -178,6 +194,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(quitAppItem)
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
+
+        // 窗口菜单：提供 macOS 原生 Cmd+W 关闭审查窗口。
+        // 与 Cmd+H 隐藏、Cmd+Q 退出保持一致，均通过主菜单分发快捷键。
+        let windowMenuItem = NSMenuItem()
+        let windowMenu = NSMenu(title: "窗口")
+        let closeWindowItem = NSMenuItem(title: "关闭审查窗口",
+                                         action: #selector(closeWindow),
+                                         keyEquivalent: "w")
+        closeWindowItem.keyEquivalentModifierMask = [.command]
+        closeWindowItem.target = self
+        windowMenu.addItem(closeWindowItem)
+        windowMenuItem.submenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+
         NSApp.mainMenu = mainMenu
     }
 
@@ -187,7 +217,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 优先使用 SF Symbol（与侧边栏审查图标一致），作为 template image
         // 自动适配深浅色背景，与系统其他 app 菜单栏图标风格一致。
         if let symbol = NSImage(systemSymbolName: "doc.text.magnifyingglass",
-                                accessibilityDescription: "引用审查") {
+                                accessibilityDescription: "CiteRev") {
             symbol.size = NSSize(width: 18, height: 18)
             symbol.isTemplate = true
             return symbol
@@ -236,12 +266,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             wc.activate()
             return
         }
-        windowController = ResultWindowController()
-        windowController?.showWindow(nil)
-        windowController?.activate()
+        let wc = ResultWindowController()
+        // 无论通过 Ctrl+W 还是标题栏红点关闭，都清空控制器引用，下次打开重建新窗口
+        wc.onWindowClosed = { [weak self] in
+            self?.windowController = nil
+        }
+        windowController = wc
+        wc.showWindow(nil)
+        wc.activate()
     }
 
-    /// Ctrl+H：仅隐藏审查窗口；应用继续在菜单栏运行，可点击菜单栏图标恢复。
+    /// Ctrl+W：关闭审查窗口。关闭后清除控制器，下次打开会重新创建新窗口。
+    @objc private func closeWindow() {
+        guard let wc = windowController else { return }
+        wc.window?.delegate = nil
+        wc.closeWindow()
+        windowController = nil
+    }
+
     @objc private func hideWindow() {
         windowController?.window?.orderOut(nil)
     }

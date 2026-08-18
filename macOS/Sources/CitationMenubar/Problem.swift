@@ -61,23 +61,11 @@ enum Category {
         "format": "格式",
     ]
 
-    /// 主色（对应 CSS 的 --c-*）
-    static let colors: [String: NSColor] = [
-        "missing": NSColor(hex: 0xF5483B), // 红
-        "mismatch": NSColor(hex: 0xF5222D), // 深红
-        "style": NSColor(hex: 0xFA8C16),    // 橙
-        "unused": NSColor(hex: 0xFF8800),   // 橙
-        "format": NSColor(hex: 0xFAAD14),   // 黄
-    ]
+    /// 主色（对应 CSS 的 --c-*）——使用 Theme 中的动态色，随深色模式切换。
+    static let colors: [String: NSColor] = Theme.categoryColors
 
-    /// 浅色背景（对应 CSS 的 --c-*-bg）
-    static let lightColors: [String: NSColor] = [
-        "missing": NSColor(hex: 0xFFF1F0),
-        "mismatch": NSColor(hex: 0xFFF1F0),
-        "style": NSColor(hex: 0xFFF7E6),
-        "unused": NSColor(hex: 0xFFF4E6),
-        "format": NSColor(hex: 0xFFFBE6),
-    ]
+    /// 浅色背景（对应 CSS 的 --c-*-bg）——深色模式下自动转为半透明强调色。
+    static let lightColors: [String: NSColor] = Theme.categoryLightColors
 
     static func name(for color: String) -> String {
         return names[color] ?? color
@@ -88,7 +76,7 @@ enum Category {
     }
 
     static func lightColor(for key: String) -> NSColor {
-        return lightColors[key] ?? NSColor(hex: 0xFFFBE6)
+        return lightColors[key] ?? Theme.accentTintBackground
     }
 }
 

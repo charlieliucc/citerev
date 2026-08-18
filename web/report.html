@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta name="referrer" content="no-referrer" />
+  <title>一键综合分析 · CiteRev</title>
+  <link rel="stylesheet" href="report.css?v=20260818-embed-subnav" />
+  <link rel="stylesheet" href="nav.css" />
+</head>
+<body>
+  <script>if(window.self!==window.top)document.documentElement.classList.add('in-iframe');</script>
+  <script src="nav.js?v=20260818-about-page"></script>
+
+  <div class="tool-subnav">
+    <div class="actions global-actions">
+      <span class="action-group" aria-label="文档操作">
+        <button id="importWord" class="secondary">导入 Word</button>
+        <button id="loadSample" class="secondary">载入示例</button>
+        <button id="clearInput" class="secondary">清空</button>
+      </span>
+      <span class="action-separator" aria-hidden="true"></span>
+      <span class="action-group" aria-label="分析操作">
+        <button id="runReport" class="primary">一键生成报告 →</button>
+      </span>
+      <input id="wordFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+    </div>
+  </div>
+
+  <main>
+    <section class="input-card">
+      <div class="input-head">
+        <div><span class="input-kicker">FULL CITATION AUDIT</span><h2>一键综合分析</h2><p>粘贴论文全文，同时检查全文一致性、APA 7 格式、公开来源真伪和引用分布；请保留 References / Bibliography / 参考文献标题。</p></div>
+        <span id="inputStats">等待输入</span>
+      </div>
+      <textarea id="documentInput" spellcheck="false" placeholder="粘贴论文全文，或导入 Word 文档……"></textarea>
+      <p id="inputMessage" class="message" aria-live="polite"></p>
+    </section>
+
+    <section id="pipeline" class="pipeline" hidden aria-live="polite">
+      <div class="pipe-step" data-step="full"><b>1</b><span>查全文</span><em>等待</em></div>
+      <div class="pipe-step" data-step="format"><b>2</b><span>查格式</span><em>等待</em></div>
+      <div class="pipe-step" data-step="verification"><b>3</b><span>查真伪</span><em>等待</em></div>
+      <div class="pipe-step" data-step="distribution"><b>4</b><span>查分布</span><em>等待</em></div>
+      <div class="progress"><i id="progressFill"></i></div>
+    </section>
+
+    <section id="report" class="report" hidden>
+      <div class="report-title">
+        <div><p class="eyebrow">COMBINED REPORT</p><h2>综合分析报告</h2></div>
+        <button id="printReport" class="secondary">打印 / 保存 PDF</button>
+      </div>
+      <div id="summaryCards" class="summary-cards"></div>
+
+      <article class="report-section" id="fullSection">
+        <header><span>01</span><div><h3>全文一致性</h3><p>文中引用与参考文献之间的缺失、不匹配及未引用项目</p></div></header>
+        <div class="section-body" id="fullResults"></div>
+      </article>
+      <article class="report-section" id="formatSection">
+        <header><span>02</span><div><h3>参考文献格式</h3><p>APA 7 结构、标点、作者、年份、排序、DOI/URL 与排版</p></div></header>
+        <div class="section-body" id="formatResults"></div>
+      </article>
+      <article class="report-section" id="verifySection">
+        <header><span>03</span><div><h3>来源真伪核验</h3><p>Crossref / OpenAlex 来源记录及逐字段比对</p></div></header>
+        <div class="section-body verification-copy" id="verifyResults"></div>
+      </article>
+      <article class="report-section" id="distributionSection">
+        <header><span>04</span><div><h3>引用分布</h3><p>引用频次、参考文献年份区间与期刊出现次数</p></div></header>
+        <div class="section-body distribution-copy" id="distributionResults"></div>
+      </article>
+      <p class="disclaimer">本报告由规则和公开索引辅助生成，不构成对论文质量、学术诚信或文献真实性的最终裁决，请人工复核。</p>
+    </section>
+  </main>
+
+  <script src="reference-splitter.js"></script>
+  <script src="citation-core.js"></script>
+  <script src="apa7-citation-rules.js"></script>
+  <script src="report-engine.js?v=20260817-2"></script>
+  <script src="report.js?v=20260817-4"></script>
+</body>
+<script src="workspace-bridge.js"></script></html>

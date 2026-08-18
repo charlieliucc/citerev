@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>引用审查 · 离线运行的引用与参考文献校对工具</title>
 <meta name="description" content="引用审查是一款离线运行、安全可控、完全免费的引用与参考文献校对工具，支持网页端、Windows 端与 macOS 端（M 芯片）下载。" />
+<link rel="stylesheet" href="vendor/bootstrap-icons/bootstrap-icons.css" />
 <style>
   :root {
     --bg: #f6f8fc;
@@ -22,6 +23,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
+  [id] { scroll-margin-top: 84px; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
@@ -41,10 +43,8 @@
   }
   .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-  .logo .dot {
-    width: 28px; height: 28px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2));
-    display: grid; place-items: center; font-size: 15px;
+  .logo img {
+    width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block;
   }
   .nav-links { display: flex; gap: 28px; color: var(--fg-soft); font-size: 14px; }
   .nav-links a:hover { color: var(--fg); }
@@ -77,6 +77,8 @@
   }
   .btn-primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; }
   .btn-ghost { background: var(--bg-soft); border-color: var(--line); color: var(--fg); }
+  .btn i.bi { margin-right: 6px; vertical-align: -0.15em; }
+  .os-ico i.bi { font-size: 26px; }
 
   /* Trust strip */
   .trust { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
@@ -124,6 +126,25 @@
   .dl-btn.primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); border: none; color: #fff; }
   .dl-btn small { display: block; font-weight: 400; font-size: 11.5px; color: var(--fg-soft); margin-top: 3px; }
   .dl-btn.primary small { color: rgba(255,255,255,0.8); }
+
+  /* Compare */
+  .compare-head2 { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .compare-head2 .h { padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 9px; }
+  .compare-head2 .h.ours { color: #fff; background: linear-gradient(135deg, var(--accent), #0d8a5c); }
+  .compare-head2 .h.others { color: var(--fg-soft); background: var(--bg); border: 1px solid var(--line); }
+  .compare-head2 .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .compare-head2 .ours .dot { background: #fff; }
+  .compare-head2 .others .dot { background: var(--warn); }
+  .compare-row2 { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 14px; align-items: stretch; margin-bottom: 12px; }
+  .compare-row2 .dim { display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13.5px; font-weight: 600; color: var(--fg); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+  .compare-row2 .cell { border-radius: 12px; padding: 14px 16px; font-size: 14.5px; line-height: 1.5; display: flex; align-items: center; gap: 9px; }
+  .compare-row2 .cell.ours { color: var(--fg); background: rgba(40,192,138,0.08); border: 1px solid rgba(40,192,138,0.25); }
+  .compare-row2 .cell.others { color: var(--fg-soft); background: var(--bg); border: 1px solid var(--line); }
+  .compare-row2 .mark { font-size: 16px; line-height: 1; flex: 0 0 auto; }
+  .compare-row2 .ours .mark { color: var(--accent); }
+  .compare-row2 .others .mark { color: var(--warn); }
+  .compare-note { text-align: center; margin-top: 26px; color: var(--fg-soft); font-size: 14px; }
+  .compare-note b { color: var(--accent); }
 
   /* Features deep */
   .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
@@ -174,9 +195,10 @@
 
 <header class="nav">
   <div class="wrap nav-inner">
-    <div class="logo"><span class="dot">🔎</span> 引用审查 Citation Reviewer</div>
+    <div class="logo"><img src="web/logo.png" alt="引用审查 logo" /> 引用审查 CiteRev</div>
     <nav class="nav-links">
-      <a href="#points">特性</a>
+      <a href="#checks">特性</a>
+      <a href="#compare">对比</a>
       <a href="#download">下载</a>
       <a href="#faq">常见问题</a>
     </nav>
@@ -188,34 +210,70 @@
 <section class="hero">
   <div class="wrap">
     <span class="badge"><span class="pulse"></span> 离线可用 · 数据安全 · 免费开源</span>
-    <h1>让每一篇论文的引用<br><span class="grad">都经得起审查</span></h1>
-    <p class="sub">引用审查桌面版可在本地自动识别论文引用不规范之处，提供多维度统计。</p>
+    <h1>交稿前，先用<span class="grad">引用审查</span></h1>
+    <p class="sub">查全文 · 查格式 · 查真伪 · 查分布 —— 离线运行、安全可控，给论文引用做一次彻底体检。</p>
 
     
      <div class="hero-cta">
-      <a class="btn btn-primary" href="#download">⬇ 立即下载</a>
-      <a class="btn btn-ghost" href="https://github.com/">⭐ 在 GitHub 查看</a>
+      <a class="btn btn-primary" href="https://charlieliucc.github.io/citerev/web/"><i class="bi bi-rocket-takeoff-fill"></i> 在线使用</a>
+      <a class="btn btn-ghost" href="#download"><i class="bi bi-download"></i> 下载桌面版</a>
+      <a class="btn btn-ghost" href="https://github.com/charlieliucc/citerev"><i class="bi bi-github"></i> GitHub 仓库</a>
     </div>
    
   </div>
 </section>
 
-<!-- FEATURES (replaces selling points) -->
-<section id="points">
+<!-- CORE CHECKS -->
+<section id="checks">
   <div class="wrap">
     <div class="sec-head">
-      <div class="eyebrow">能力</div>
-      <h2>不止于「找错」</h2>
-      <p>自动拆分正文与参考文献，颜色标注问题，并给出多维度的引用统计。</p>
+      <div class="eyebrow">特性</div>
+      <h2>查全文 · 查格式 · 查真伪 · 查分布</h2>
+      <p>四大核心能力，覆盖论文引用最常见、也最容易忽视的问题。</p>
     </div>
     <div class="feat-grid">
-      <div class="feat"><div class="fi">🔴</div><div><h4>缺失引用高亮</h4><p>自动识别正文被引用却缺失、或参考文献未被引用的条目，红色重点标注。</p></div></div>
-      <div class="feat"><div class="fi">🟠</div><div><h4>孤立文献检测</h4><p>参考文献列表中存在却从未在正文中被引用的文献，橙色提示。</p></div></div>
-      <div class="feat"><div class="fi">🟡</div><div><h4>格式规范检查</h4><p>对照 APA 7 等规则，检查年份、作者、期刊等格式问题，黄色标记待修正。</p></div></div>
-      <div class="feat"><div class="fi">📊</div><div><h4>多维度统计</h4><p>汇总引用次数、发表年份分布、期刊来源等，一眼掌握文献使用全貌。</p></div></div>
-      <div class="feat"><div class="fi">📑</div><div><h4>Word 原生集成</h4><p>直接在文档内高亮，无需导出复制（macOS 适用）。</p></div></div>
-      <div class="feat"><div class="fi">⚙️</div><div><h4>规则可扩展</h4><p>提供规则 API，可按需扩展引用规范与学科定制检查逻辑。</p></div></div>
+      <div class="feat"><div class="fi"><i class="bi bi-search"></i></div><div><h4>查全文引用是否缺漏</h4><p>逐一核对正文中的每一次引用是否都在参考文献列表中出现；同时标出列表中存在却从未被正文引用的孤立文献，杜绝漏引与多列。</p></div></div>
+      <div class="feat"><div class="fi"><i class="bi bi-rulers"></i></div><div><h4>查引用格式是否规范</h4><p>对照 APA 7 等规范，检查作者姓名、出版年份、期刊/书名斜体、卷期页码、DOI 与 URL 写法等格式细节，黄色标记待修正项。</p></div></div>
+      <div class="feat"><div class="fi"><i class="bi bi-clipboard-check"></i></div><div><h4>查引用条目是否真实</h4><p>依托海量学术数据库，核验每一条引用是否真实存在、信息是否准确，及时发现虚构或错误的文献。</p></div></div>
+      <div class="feat"><div class="fi"><i class="bi bi-bar-chart"></i></div><div><h4>查引用文献信息分布</h4><p>汇总引用次数、发表年份分布、期刊来源等，一眼掌握文献使用全貌。</p></div></div>
     </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">为什么选我们</div>
+      <h2>不只是一点不一样</h2>
+      <p>同样是引用审查工具，差的不只是价格，更是数据的归属与使用自由。</p>
+    </div>
+    <div class="compare-head2">
+      <div></div>
+      <div class="h ours"><span class="dot"></span> 引用审查（本工具）</div>
+      <div class="h others"><span class="dot"></span> 其他平台</div>
+    </div>
+    <div class="compare-row2">
+      <div class="dim">费用</div>
+      <div class="cell ours"><i class="bi bi-check-lg mark"></i> 免费 · 无限制</div>
+      <div class="cell others"><i class="bi bi-x-lg mark"></i> 免费试用，功能受限，需开通会员</div>
+    </div>
+    <div class="compare-row2">
+      <div class="dim">开放性</div>
+      <div class="cell ours"><i class="bi bi-check-lg mark"></i> 开源 · 代码可审计</div>
+      <div class="cell others"><i class="bi bi-x-lg mark"></i> 闭源，逻辑不透明</div>
+    </div>
+    <div class="compare-row2">
+      <div class="dim">数据处理</div>
+      <div class="cell ours"><i class="bi bi-check-lg mark"></i> 本地处理 · 不上传</div>
+      <div class="cell others"><i class="bi bi-x-lg mark"></i> 经服务器审查，存在泄漏风险</div>
+    </div>
+    <div class="compare-row2">
+      <div class="dim">自定义</div>
+      <div class="cell ours"><i class="bi bi-check-lg mark"></i> 支持自定义检查规则</div>
+      <div class="cell others"><i class="bi bi-x-lg mark"></i> 无法自定义，规则固定</div>
+    </div>
+    <p class="compare-note">同样的引用审查，<b>更省心、更安全、更自由</b>。</p>
   </div>
 </section>
 
@@ -231,7 +289,7 @@
 
       <!-- Web -->
       <div class="dl-card">
-        <div class="os"><span class="os-ico">🌐</span> 网页端（轻量版）</div>
+        <div class="os"><span class="os-ico"><i class="bi bi-globe"></i></span> 网页端（轻量版）</div>
         <p class="desc">免安装，浏览器打开即用。不适合处理需要隐私。</p>
         <ul class="dl-list">
           <li>跨平台，无需下载</li>
@@ -243,7 +301,7 @@
 
       <!-- Windows -->
       <div class="dl-card">
-        <div class="os"><span class="os-ico">🪟</span> Windows 端（桌面版）</div>
+        <div class="os"><span class="os-ico"><i class="bi bi-windows"></i></span> Windows 端（桌面版）</div>
         <p class="desc">Electron 打包的独立桌面 App。</p>
         <ul class="dl-list">
           <li>与网页版功能一致</li>
@@ -255,14 +313,14 @@
 
       <!-- macOS -->
       <div class="dl-card">
-        <div class="os"><span class="os-ico">🍎</span> macOS 端（桌面版）</div>
+        <div class="os"><span class="os-ico"><i class="bi bi-apple"></i></span> macOS 端（桌面版）</div>
         <p class="desc">原生App，可直接打开Word使用</p>
         <ul class="dl-list">
           <li>原生 .dmg 安装包</li>
           <li>完整支持 Apple M 系列芯片</li>
           <li>离线运行、无后台上传</li>
         </ul>
-        <a class="dl-btn" href="#">下载 macOS 版 <small>Apple Silicon · .dmg</small></a>
+        <a class="dl-btn" href="https://github.com/charlieliucc/citerev/releases/tag/macOS">下载 macOS 版 <small>Apple Silicon · .dmg</small></a>
       </div>
 
     </div>
@@ -322,7 +380,7 @@
     <div class="cta-band">
       <h2>现在就开始，给你的论文做一次离线审查</h2>
       <p>免费、本地、安全 —— 三种平台，总有一款适合你。</p>
-      <a class="btn btn-primary" href="#download">⬇ 免费下载引用审查</a>
+      <a class="btn btn-primary" href="#download"><i class="bi bi-download"></i> 免费下载引用审查</a>
     </div>
   </div>
 </section>

@@ -35,7 +35,7 @@ struct ResultView: View {
             bottomBar
         }
         .frame(minWidth: 440, idealWidth: 480, minHeight: 440)
-        .background(Color(nsColor: NSColor(hex: 0xF3F4F6)))
+        .background(Color(theme: Theme.background))
         .onChange(of: model.hasCompletedDetection) { completed in
             if completed {
                 selectedSection = .review
@@ -48,6 +48,7 @@ struct ResultView: View {
     enum SettingsPage: Identifiable {
         case main
         case about
+        case lab
         var id: Int { hashValue }
     }
 
@@ -59,7 +60,7 @@ struct ResultView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
     }
 
     private func bottomItem(_ section: SectionID) -> some View {
@@ -76,7 +77,7 @@ struct ResultView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .foregroundColor(isActive ? Color(nsColor: NSColor(hex: 0x1677FF)) : Color(nsColor: .secondaryLabelColor))
+            .foregroundColor(isActive ? Color(theme: Theme.accent) : Color(nsColor: .secondaryLabelColor))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -105,6 +106,8 @@ struct ResultView: View {
             settingsView
         case .about:
             aboutView
+        case .lab:
+            labView
         }
     }
 
@@ -127,33 +130,54 @@ struct ResultView: View {
         }
     }
 
-    // MARK: - 设置（美化卡片式，关于为二级入口）
-    private var settingsView: some View {
+    // MARK: - 实验室功能视图（实验性功能入口，检查样式等）
+    private var labView: some View {
         VStack(spacing: 0) {
-            pageHeader(icon: "gearshape.fill", title: "设置", subtitle: "个性化你的 APA 审查偏好")
+            // 顶栏：返回设置
+            ZStack {
+                HStack(spacing: 4) {
+                    Button {
+                        settingsPage = .main
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 12, weight: .semibold))
+                            Text("设置")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(Color(theme: Theme.accent))
+                    Spacer()
+                }
+                Text("实验室功能")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(theme: Theme.surface))
+
             Divider()
+
             ScrollView {
                 VStack(spacing: 16) {
-                // 通用设置卡片
-                settingsCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
-                            Text("提前读取当前 Word 文档")
-                                .font(.system(size: 12.5, weight: .semibold))
-                            Spacer()
-                            Toggle("", isOn: $model.preloadEnabled)
-                                .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(nsColor: NSColor(hex: 0x1677FF))))
-                        }
-                        Text("开启后，App 启动时只读取当前活动文档，不执行 APA 检测；点击“开始检测”后使用预读取内容。")
-                            .font(.system(size: 10.5))
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                // 不稳定提示
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(theme: Theme.textSecondary))
+                    Text("实验室功能仍在测试中，可能不稳定或存在误差，请在正式使用前人工复核结果。")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(Color(theme: Theme.textSecondary))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(theme: Theme.surfaceSecondary))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(theme: Theme.border), lineWidth: 1)
+                )
+                .cornerRadius(8)
 
                 // 检查样式卡片
                 settingsCard {
@@ -161,7 +185,7 @@ struct ResultView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "checklist")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                                .foregroundColor(Color(theme: Theme.accent))
                             Text("检查样式")
                                 .font(.system(size: 12.5, weight: .semibold))
                         }
@@ -193,6 +217,66 @@ struct ResultView: View {
                         }
                     }
                 }
+                }
+                .padding(16)
+            }
+        }
+        .background(Color(theme: Theme.background))
+    }
+
+    // MARK: - 设置（美化卡片式，关于为二级入口）
+    private var settingsView: some View {
+        VStack(spacing: 0) {
+            pageHeader(icon: "gearshape.fill", title: "设置", subtitle: "个性化你的 APA 审查偏好")
+            Divider()
+            ScrollView {
+                VStack(spacing: 16) {
+                // 通用设置卡片
+                settingsCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(theme: Theme.accent))
+                            Text("提前读取当前 Word 文档")
+                                .font(.system(size: 12.5, weight: .semibold))
+                            Spacer()
+                            Toggle("", isOn: $model.preloadEnabled)
+                                .labelsHidden()
+                                .toggleStyle(SwitchToggleStyle(tint: Color(theme: Theme.accent)))
+                        }
+                        Text("开启后，App 启动时只读取当前活动文档，不执行检测；点击“开始检测”后使用预读取内容。")
+                            .font(.system(size: 10.5))
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                // 实验室功能（二级入口）
+                settingsCard {
+                    Button {
+                        settingsPage = .lab
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "flask.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(theme: Theme.accent))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("实验室功能")
+                                    .font(.system(size: 12.5, weight: .medium))
+                                Text("检查样式等尚不稳定的实验性功能")
+                                    .font(.system(size: 10.5))
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 // 使用统计卡片
                 settingsCard {
@@ -200,17 +284,26 @@ struct ResultView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "sum")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                                .foregroundColor(Color(theme: Theme.accent))
                             Text("使用统计")
                                 .font(.system(size: 12.5, weight: .semibold))
                         }
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text("\(model.cumulativeProblems)")
                                 .font(.system(size: 26, weight: .bold))
-                                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                                .foregroundColor(Color(theme: Theme.accent))
                             Text("个问题已被累计识别")
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
+                            Spacer(minLength: 0)
+                            Button {
+                                model.resetCumulativeProblems()
+                            } label: {
+                                Text("清零")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
                         }
                         Text("统计自所有检测次数，持续记录本地，不会上传。")
                             .font(.system(size: 10.5))
@@ -226,7 +319,7 @@ struct ResultView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "info.circle.fill")
                                 .font(.system(size: 14))
-                                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                                .foregroundColor(Color(theme: Theme.accent))
                             Text("关于")
                                 .font(.system(size: 12.5, weight: .medium))
                             Spacer()
@@ -238,11 +331,39 @@ struct ResultView: View {
                     }
                     .buttonStyle(.plain)
                 }
+
+                // 访问官网（外部链接）
+                settingsCard {
+                    Button {
+                        if let url = URL(string: "https://charlieliucc.github.io/citerev/") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(theme: Theme.accent))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("访问官网")
+                                    .font(.system(size: 12.5, weight: .medium))
+                                Text("charlieliucc.github.io/citerev")
+                                    .font(.system(size: 10.5))
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(16)
             }
         }
-        .background(Color(nsColor: NSColor(hex: 0xF3F4F6)))
+        .background(Color(theme: Theme.background))
     }
 
     // 统一卡片样式
@@ -250,7 +371,7 @@ struct ResultView: View {
         content()
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white)
+            .background(Color(theme: Theme.surface))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
@@ -260,7 +381,7 @@ struct ResultView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 22))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                .foregroundColor(Color(theme: Theme.accent))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 18, weight: .bold))
@@ -272,7 +393,7 @@ struct ResultView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
     }
 
     // MARK: - 审查内容（顶栏 + 内容区）
@@ -288,7 +409,7 @@ struct ResultView: View {
         HStack(spacing: 10) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 22))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                .foregroundColor(Color(theme: Theme.accent))
             VStack(alignment: .leading, spacing: 2) {
                 Text("审查结果")
                     .font(.system(size: 18, weight: .bold))
@@ -307,7 +428,7 @@ struct ResultView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
     }
 
     // MARK: - 关于视图（参考加载项 taskpane.html 的「关于」视图）
@@ -326,7 +447,7 @@ struct ResultView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                    .foregroundColor(Color(theme: Theme.accent))
                     Spacer()
                 }
                 Text("关于")
@@ -334,7 +455,7 @@ struct ResultView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.white)
+            .background(Color(theme: Theme.surface))
 
             Divider()
 
@@ -344,12 +465,12 @@ struct ResultView: View {
                     VStack(spacing: 12) {
                         aboutLogo
                         VStack(alignment: .center, spacing: 3) {
-                            Text("引用审查 Citation reviewer for Mac")
+                            Text("CiteRev for Mac")
                                 .font(.system(size: 15, weight: .semibold))
-                            Text("macOS 菜单栏引用与参考文献一致性校对工具")
+                            Text("引用与参考文献一致性校对工具")
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
-                            Text("v1.1-20260815 · Swift重构")
+                            Text("v1.0-20260815 · Swift重构")
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
                         }
@@ -375,22 +496,25 @@ struct ResultView: View {
                         Text("**完全离线使用**。所有检测均在本地 Word 文档内完成，**不会上传任何内容**，无需联网。**本工具不收集任何数据**，不会记录、保存或向任何服务器发送你的文档、引用或操作信息，不必担心数据外泄。")
 
                         aboutSectionTitle("获取更新")
-                        Text("本工具的新版本与更新说明会发布在 GitHub 主页，前往查看或关注以获取最新功能与修复：")
-                        aboutLink("GitHub: charlieliucc")
+                        Text("本工具的新版本与更新说明会发布在 GitHub 仓库，前往查看或关注以获取最新功能与修复：")
+                        Link("GitHub: github.com/charlieliucc/citerev", destination: URL(string: "https://github.com/charlieliucc/citerev")!)
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(theme: Theme.accent))
 
                         aboutSectionTitle("联系方式")
                         Text("欢迎反馈问题或建议：")
                         aboutLink("GitHub: charlieliucc")
+                        aboutLink("Email: charlieliucc@outlook.com")
 
                         aboutSectionTitle("创作声明")
-                        Text("本工具使用 **AI 辅助编写**，输出结果均经过人工审查。本项目**开源且免费使用**，采用 **MIT 许可证**。禁止以任何方式转卖本工具或其衍生作品。")
+                        Text("本工具使用 **AI 辅助编写**。本项目**开源且免费使用**，采用 **MIT 许可证**。禁止以任何方式转卖本工具或其衍生作品。")
                     }
                 }
                 .padding(16)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: NSColor(hex: 0xF3F4F6)))
+        .background(Color(theme: Theme.background))
     }
 
     /// 关于页面顶部的 logo（加载项的图标）
@@ -415,7 +539,7 @@ struct ResultView: View {
     private func aboutSectionTitle(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(Color(nsColor: NSColor(hex: 0x1F2329)))
+            .foregroundColor(Color(theme: Theme.textPrimary))
             .padding(.top, 4)
     }
 
@@ -424,11 +548,11 @@ struct ResultView: View {
             ForEach(items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 6) {
                     Text("•")
-                        .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                        .foregroundColor(Color(theme: Theme.accent))
                         .font(.system(size: 12, weight: .bold))
                     Text(renderMarkdownInline(item))
                         .font(.system(size: 12))
-                        .foregroundColor(Color(nsColor: NSColor(hex: 0x646A73)))
+                        .foregroundColor(Color(theme: Theme.textSecondary))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -445,8 +569,8 @@ struct ResultView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background(Color(nsColor: NSColor(red: 0.09, green: 0.47, blue: 1.0, alpha: 0.08)))
-        .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+        .background(Color(theme: Theme.accentTintBackground))
+        .foregroundColor(Color(theme: Theme.accent))
         .cornerRadius(6)
         .onTapGesture {
             if let url = URL(string: "https://github.com/charlieliucc") {
@@ -526,7 +650,7 @@ struct ResultView: View {
             Spacer()
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 38))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                .foregroundColor(Color(theme: Theme.accent))
             Text("准备检查 Word 文档")
                 .font(.system(size: 15, weight: .semibold))
             Text("当前文档：\(model.activeDocumentName)")
@@ -601,7 +725,7 @@ struct ResultView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
         .overlay(alignment: .bottom) {
             Divider()
         }
@@ -628,10 +752,11 @@ struct ResultView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(isActive ? Color(nsColor: NSColor(hex: 0xF3F4F6)) : Color.clear)
+            .background(isActive ? Color(theme: Theme.surfaceSecondary) : Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(nsColor: isActive ? NSColor(hex: 0xE5E6EB) : .clear), lineWidth: 1)
+                    .stroke(Color(theme: Theme.border), lineWidth: 1)
+                    .opacity(isActive ? 1 : 0)
             )
             .cornerRadius(12)
             .foregroundColor(Color(nsColor: .labelColor))
@@ -669,7 +794,7 @@ struct ResultView: View {
                 .font(.system(size: 36))
             Text("「\(model.filter)」分类下暂未发现问题")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1F2329)))
+                .foregroundColor(Color(theme: Theme.textPrimary))
             Text("该文档在此分类下无需要处理的问题，但仍需人工复核。")
                 .font(.system(size: 11.5))
                 .foregroundColor(.secondary)
@@ -687,7 +812,7 @@ struct ResultView: View {
             Spacer()
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 30))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                .foregroundColor(Color(theme: Theme.accent))
             Text(model.detectionStage)
                 .font(.system(size: 13, weight: .semibold))
             ProgressView(value: model.detectionProgress, total: 1)
@@ -716,7 +841,7 @@ struct ResultView: View {
         HStack(spacing: 3) {
             Image(systemName: model.detectionProgress >= threshold ? "checkmark.circle.fill" : "circle")
                 .foregroundColor(model.detectionProgress >= threshold
-                                 ? Color(nsColor: NSColor(hex: 0x1677FF))
+                                 ? Color(theme: Theme.accent)
                                  : .secondary)
             Text(title)
         }
@@ -765,13 +890,13 @@ struct ResultView: View {
         } label: {
             Text(title)
                 .font(.system(size: 12.5, weight: isActive ? .semibold : .regular))
-                .foregroundColor(isActive ? .white : Color(nsColor: .labelColor))
+                .foregroundColor(isActive ? .white : Color(theme: Theme.textPrimary))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
-                .background(isActive ? Color(nsColor: NSColor(hex: 0x1677FF)) : Color.white)
+                .background(isActive ? Color(theme: Theme.accent) : Color(theme: Theme.surfaceSecondary))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: isActive ? NSColor(hex: 0x1677FF) : NSColor(hex: 0xE5E6EB)), lineWidth: 1)
+                        .stroke(Color(theme: isActive ? Theme.accent : Theme.border), lineWidth: 1)
                 )
                 .cornerRadius(6)
         }
@@ -826,7 +951,7 @@ struct ResultView: View {
 
             Text(row.label ?? "")
                 .font(.system(size: 12.5))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1F2329)))
+                .foregroundColor(Color(theme: Theme.textPrimary))
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -852,17 +977,17 @@ struct ResultView: View {
 
             Text("\(row.count ?? 0) \(selectedStatsTab == 1 ? "条" : "次")")
                 .font(.system(size: 12, weight: .bold))
-                .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
+                .foregroundColor(Color(theme: Theme.accent))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 2)
-                .background(Color(nsColor: NSColor(red: 0.09, green: 0.47, blue: 1.0, alpha: 0.08)))
+                .background(Color(theme: Theme.accentTintBackground))
                 .cornerRadius(999)
         }
         .padding(9)
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: NSColor(hex: 0xE5E6EB)), lineWidth: 1)
+                .stroke(Color(theme: Theme.border), lineWidth: 1)
         )
         .cornerRadius(8)
         // 注意：不在这里加外层 onTapGesture，避免吞掉内部 ◀▶ 按钮的点击。
@@ -877,8 +1002,8 @@ struct ResultView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundColor(Color(nsColor: NSColor(hex: 0x1677FF)))
-        .background(Color(nsColor: NSColor(hex: 0xEDF4FF)))
+        .foregroundColor(Color(theme: Theme.accent))
+        .background(Color(theme: Theme.accentSoftBackground))
         .cornerRadius(6)
         .help(tooltip)
         .contentShape(Rectangle())
@@ -886,10 +1011,10 @@ struct ResultView: View {
 
     private func rankColor(_ rank: Int) -> NSColor {
         switch rank {
-        case 1: return NSColor(hex: 0xF5483B)
-        case 2: return NSColor(hex: 0xFF8800)
-        case 3: return NSColor(hex: 0xFAAD14)
-        default: return NSColor(hex: 0x1677FF)
+        case 1: return Theme.categoryColors["missing"] ?? Theme.accent
+        case 2: return Theme.categoryColors["unused"] ?? Theme.accent
+        case 3: return Theme.categoryColors["format"] ?? Theme.accent
+        default: return Theme.accent
         }
     }
 
@@ -944,14 +1069,14 @@ private struct ProblemCard: View {
                 if !problem.displayQuote.isEmpty {
                     Text(problem.displayQuote)
                         .font(.system(size: 12.5))
-                        .foregroundColor(Color(nsColor: NSColor(hex: 0x1F2329)))
+                        .foregroundColor(Color(theme: Theme.textPrimary))
                         .lineLimit(3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(9)
-                        .background(Color(nsColor: NSColor(hex: 0xF7F8FA)))
+                        .background(Color(theme: Theme.quoteBackground))
                         .overlay(alignment: .leading) {
                             Rectangle()
-                                .fill(Color(nsColor: NSColor(hex: 0xE5E6EB)))
+                                .fill(Color(theme: Theme.border))
                                 .frame(width: 2)
                         }
                         .cornerRadius(4)
@@ -961,7 +1086,7 @@ private struct ProblemCard: View {
                 if !problem.displayDesc.isEmpty {
                     Text(problem.displayDesc)
                         .font(.system(size: 12))
-                        .foregroundColor(Color(nsColor: NSColor(hex: 0x646A73)))
+                        .foregroundColor(Color(theme: Theme.textSecondary))
                         .lineLimit(4)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .multilineTextAlignment(.leading)
@@ -977,12 +1102,12 @@ private struct ProblemCard: View {
             HStack(spacing: 8) {
                 Spacer()
                 cardActionButton("忽略", systemImage: "eye.slash", color: .secondary, action: onIgnore)
-                cardActionButton("已解决", systemImage: "checkmark.circle", color: Color(nsColor: NSColor(hex: 0x16A34A)), action: onResolve)
+                cardActionButton("已解决", systemImage: "checkmark.circle", color: Color(theme: Theme.success), action: onResolve)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
         }
-        .background(Color.white)
+        .background(Color(theme: Theme.surface))
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(Color(nsColor: accent))
@@ -991,7 +1116,7 @@ private struct ProblemCard: View {
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: isHovering ? NSColor(hex: 0xC0C4CC) : NSColor(hex: 0xE5E6EB)), lineWidth: 1)
+                .stroke(Color(nsColor: isHovering ? Theme.borderHover : Theme.border), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(isHovering ? 0.10 : 0), radius: isHovering ? 8 : 0, x: 0, y: isHovering ? 3 : 0)
         .onHover { hovering in

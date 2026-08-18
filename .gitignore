@@ -10,3 +10,4 @@ macOS/.build/
 node_modules/
 dist/
 *.log
+macOS/Makefile

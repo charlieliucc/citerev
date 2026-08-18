@@ -1,11 +1,11 @@
 ---
 name: csl-to-citation-rule
-description: Generate an importable Citation Reviewer App rule JSON from a CSL style file, the App JSON-rule guide/schema, and representative paper samples. Use when Codex must inspect .csl XML plus sample citations/references, infer an author-date style's declarative checks, produce or revise an independent or APA-derived JSON rule, and validate it before delivery.
+description: Generate an importable CiteRev App rule JSON from a CSL style file, the App JSON-rule guide/schema, and representative paper samples. Use when Codex must inspect .csl XML plus sample citations/references, infer an author-date style's declarative checks, produce or revise an independent or APA-derived JSON rule, and validate it before delivery.
 ---
 
-# Generate Citation Reviewer JSON Rules
+# Generate CiteRev JSON Rules
 
-Create one UTF-8 `.json` file that the Citation Reviewer App can import. Never emit executable JavaScript.
+Create one UTF-8 `.json` file that the CiteRev App can import. Never emit executable JavaScript.
 
 ## Required inputs
 

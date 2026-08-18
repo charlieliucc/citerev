@@ -1,0 +1,21 @@
+{
+  "name": "citation-reviewer-electron",
+  "productName": "引用审查轻量版",
+  "version": "1.0.0",
+  "description": "CiteRev Lite - packaged as a Windows app via Electron Forge",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.5.0",
+    "@electron-forge/maker-zip": "^7.5.0",
+    "@electron-forge/plugin-fuses": "^7.5.0",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^33.0.0"
+  },
+  "allowScripts": {}
+}

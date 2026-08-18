@@ -66,6 +66,12 @@ final class ResultViewModel: ObservableObject {
     /// 累计已识别的问题总数（跨多次检测，持久化保存）
     @Published var cumulativeProblems: Int = UserDefaults.standard.integer(forKey: cumulativeProblemsKey)
 
+    /// 清零累计已识别的问题总数（同时清除本地持久化记录）
+    func resetCumulativeProblems() {
+        cumulativeProblems = 0
+        UserDefaults.standard.removeObject(forKey: Self.cumulativeProblemsKey)
+    }
+
     init() {
         let profiles = RuleProfileStore.availableProfiles()
         availableRuleProfiles = profiles
@@ -84,7 +90,7 @@ final class ResultViewModel: ObservableObject {
 
     func importRuleProfile() {
         let panel = NSOpenPanel()
-        panel.title = "导入 JSON 引用检查规则"
+        panel.title = "导入 JSON 引用审查规则"
         panel.prompt = "导入"
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -466,7 +472,7 @@ final class ResultViewModel: ObservableObject {
 
     private func showInfoAlert(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "引用审查"
+        alert.messageText = "CiteRev"
         alert.informativeText = message
         alert.alertStyle = .informational
         alert.runModal()
@@ -474,7 +480,7 @@ final class ResultViewModel: ObservableObject {
 
     private func showErrorAlert(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "引用审查"
+        alert.messageText = "CiteRev"
         alert.informativeText = "检测失败：\n\(message)"
         alert.alertStyle = .critical
         alert.runModal()

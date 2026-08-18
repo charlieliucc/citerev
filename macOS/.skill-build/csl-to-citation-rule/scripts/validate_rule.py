@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a Citation Reviewer import JSON and declarative checks."""
+"""Validate a CiteRev import JSON and declarative checks."""
 import json, re, sys
 from pathlib import Path
 

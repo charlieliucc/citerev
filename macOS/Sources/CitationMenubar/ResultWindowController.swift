@@ -7,6 +7,9 @@ final class ResultWindowController: NSWindowController, NSWindowDelegate {
     private var model: ResultViewModel!
     private var titleObservation: AnyCancellable?
 
+    /// 窗口关闭（含 Ctrl+W、标题栏红点）时回调，用于让外部清理控制器引用。
+    var onWindowClosed: (() -> Void)?
+
     convenience init() {
         let model = ResultViewModel()
         let contentView = ResultView(model: model)
@@ -19,7 +22,7 @@ final class ResultWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "引用审查 · 首页"
+        window.title = "CiteRev · 首页"
         window.minSize = NSSize(width: 420, height: 480)
         window.contentViewController = hosting
         // 固定内容尺寸，避免被 SwiftUI 内容的 preferredContentSize 撑大
@@ -34,7 +37,7 @@ final class ResultWindowController: NSWindowController, NSWindowDelegate {
             .removeDuplicates()
             .receive(on: RunLoop.main)
             .sink { [weak window] section in
-                window?.title = "引用审查 · \(section)"
+                window?.title = "CiteRev · \(section)"
             }
 
         // 打开后仅按设置预读取；真正检测必须由用户点击“开始检测”。
@@ -85,6 +88,7 @@ final class ResultWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        // 窗口关闭后清空引用，允许下次重新创建
+        // 窗口关闭后通知外部清空控制器引用，允许下次重新创建新窗口
+        onWindowClosed?()
     }
 }

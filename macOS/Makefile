@@ -8,8 +8,8 @@
 #
 # 最终 .app 不依赖 Python / Node，检测引擎通过系统自带 JavaScriptCore 运行。
 
-APP_NAME := 引用审查
-BUNDLE_ID := com.ccliu.citation-review
+APP_NAME := CiteRev
+BUNDLE_ID := com.ccliu.citerev
 
 BUILD_DIR := .build
 DIST_DIR := dist
@@ -17,7 +17,13 @@ APP_BUNDLE := $(DIST_DIR)/$(APP_NAME).app
 
 SWIFT := swift
 
-.PHONY: all build run app clean
+# dmg 打包参数
+DMG_NAME := CiteRev-1.0
+DMG_BG := /Users/ccliu/Downloads/background.png
+DMG_WINDOW_W := 768
+DMG_WINDOW_H := 427
+
+.PHONY: all build run app dmg clean
 
 all: app
 
@@ -51,6 +57,11 @@ app: build
 	@echo "打包完成：$(APP_BUNDLE)"
 	@echo "分发：把 $(APP_BUNDLE) 整个文件夹发给对方，双击即可运行。"
 	@echo "首次运行需在 系统设置 → 隐私与安全性 → 辅助功能 授权。"
+
+# 打包为 .dmg 安装盘（带背景图 + 拖到 Applications 提示）
+# 背景图：/Users/ccliu/Downloads/bg.png（1530×862 @2x，对应窗口 765×431 pt）
+dmg: app
+	@bash scripts/make_dmg.sh "$(APP_BUNDLE)" "$(DMG_BG)" "$(DMG_NAME)" "$(DMG_WINDOW_W)" "$(DMG_WINDOW_H)"
 
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR)

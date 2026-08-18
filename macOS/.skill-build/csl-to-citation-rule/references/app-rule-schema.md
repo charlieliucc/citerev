@@ -1,4 +1,4 @@
-# Citation Reviewer App JSON schema
+# CiteRev App JSON schema
 
 APA 7 parameter override:
 
