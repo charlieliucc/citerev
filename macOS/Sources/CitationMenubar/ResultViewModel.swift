@@ -4,6 +4,13 @@ import JavaScriptCore
 import AppKit
 import UniformTypeIdentifiers
 
+/// 仅保存在进程内的真伪检查输入；不会写入磁盘或 UserDefaults。
+struct VerificationInputSnapshot: Equatable {
+    let text: String
+    let documentName: String
+    let revision: Int
+}
+
 /// 结果窗口的状态与业务逻辑。
 final class ResultViewModel: ObservableObject {
     @Published var problems: [Problem] = []
@@ -20,6 +27,9 @@ final class ResultViewModel: ObservableObject {
     @Published var preloadStage = ""
     @Published var activeDocumentName = "尚未读取 Word 文档"
     @Published var hasCompletedDetection = false
+    @Published private(set) var verificationInputSnapshot: VerificationInputSnapshot?
+    @Published var isPreparingVerification = false
+    @Published var verificationPreparationMessage = "尚未读取可供真伪检查的 Word 内容"
     @Published var availableRuleProfiles: [RuleProfileSummary] = []
     @Published var ruleProfileMessage = ""
     @Published var activeRuleProfileID: String {
@@ -60,6 +70,7 @@ final class ResultViewModel: ObservableObject {
     private var cachedParagraphs: [WordParagraph]?
     private var cachedDocument: WordController.DocumentIdentity?
     private var detectionRequestedDuringPreload = false
+    private var verificationRevision = 0
     private static let preloadPreferenceKey = "preloadActiveWordDocument"
     private static let cumulativeProblemsKey = "cumulativeProblemsIdentified"
 
@@ -135,6 +146,7 @@ final class ResultViewModel: ObservableObject {
                     if identityBefore == identityAfter {
                         self.cachedParagraphs = paragraphs
                         self.cachedDocument = identityAfter
+                        self.storeVerificationSnapshot(paragraphs: paragraphs, documentName: identityAfter.name)
                         self.activeDocumentName = identityAfter.name
                         self.preloadProgress = 1
                         self.preloadStage = "已提前读取 \(paragraphs.count) 个段落"
@@ -157,6 +169,10 @@ final class ResultViewModel: ObservableObject {
                     self.isPreloading = false
                     self.preloadProgress = 0
                     self.preloadStage = "未能提前读取 Word 文档"
+                    if self.isPreparingVerification {
+                        self.isPreparingVerification = false
+                        self.verificationPreparationMessage = "读取失败：\(error.localizedDescription)"
+                    }
                     if self.detectionRequestedDuringPreload {
                         self.detectionRequestedDuringPreload = false
                         self.isBusy = false
@@ -211,7 +227,7 @@ final class ResultViewModel: ObservableObject {
             detectionRequestedDuringPreload = true
             isBusy = true
             hasCompletedDetection = false
-            detectionProgress = max(0.15, 0.15 + preloadProgress * 0.50)
+            detectionProgress = 0.15
             detectionStage = "正在读取当前 Word 文档"
             statusMessage = detectionStage
             return
@@ -249,6 +265,7 @@ final class ResultViewModel: ObservableObject {
                     )
                 }
             }
+            publishVerificationSnapshot(paragraphs: paragraphs, documentName: activeDocument.name)
             DispatchQueue.main.async { [weak self] in self?.activeDocumentName = activeDocument.name }
             updateDetectionProgress(0.65, stage: "已读取 \(paragraphs.count) 个段落")
             updateDetectionProgress(0.72, stage: "正在执行 APA 7 引用分析")
@@ -286,6 +303,7 @@ final class ResultViewModel: ObservableObject {
                     guard let self = self else { return }
                     self.isBusy = false
                     self.needsWord = true
+                    self.finishPendingVerificationRead(error: "请先打开 Word 文档")
                     self.detectionProgress = 0
                     self.detectionStage = "等待打开 Word 文档"
                     self.statusMessage = "请先打开 Word 文档"
@@ -294,6 +312,7 @@ final class ResultViewModel: ObservableObject {
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     self.isBusy = false
+                    self.finishPendingVerificationRead(error: error.localizedDescription)
                     self.detectionProgress = 0
                     self.detectionStage = "检测失败"
                     self.statusMessage = "检测失败"
@@ -304,12 +323,74 @@ final class ResultViewModel: ObservableObject {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.isBusy = false
+                self.finishPendingVerificationRead(error: error.localizedDescription)
                 self.detectionProgress = 0
                 self.detectionStage = "检测失败"
                 self.statusMessage = "检测失败"
                 self.showErrorAlert(error.localizedDescription)
             }
         }
+    }
+
+    /// 用户在“真伪”页主动要求读取当前 Word。读取成功后只保存在内存中，
+    /// 不启动 WKWebView，也不会触发 Crossref/OpenAlex 请求。
+    func prepareVerificationFromActiveWord() {
+        guard !isPreparingVerification else { return }
+        isPreparingVerification = true
+        if isPreloading {
+            verificationPreparationMessage = "正在复用启动时的 Word 读取…"
+            return
+        }
+        if isBusy {
+            verificationPreparationMessage = "正在复用当前检测读取的 Word 内容…"
+            return
+        }
+        verificationPreparationMessage = "正在读取当前 Word 文档…"
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                let identity = try WordController.activeDocumentIdentity()
+                // 真伪检查只需要文本；跳过格式读取可显著减少 Word Apple event。
+                let paragraphs = try WordController.readParagraphs(includeFormatting: false)
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.storeVerificationSnapshot(paragraphs: paragraphs, documentName: identity.name)
+                    self.activeDocumentName = identity.name
+                    self.isPreparingVerification = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.isPreparingVerification = false
+                    self.verificationPreparationMessage = "读取失败：\(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    private func publishVerificationSnapshot(paragraphs: [WordParagraph], documentName: String) {
+        DispatchQueue.main.async { [weak self] in
+            self?.storeVerificationSnapshot(paragraphs: paragraphs, documentName: documentName)
+        }
+    }
+
+    private func storeVerificationSnapshot(paragraphs: [WordParagraph], documentName: String) {
+        let text = paragraphs.map(\.text).joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        verificationRevision += 1
+        verificationInputSnapshot = VerificationInputSnapshot(
+            text: text,
+            documentName: documentName,
+            revision: verificationRevision
+        )
+        isPreparingVerification = false
+        verificationPreparationMessage = "已在内存中准备 \(documentName)（\(paragraphs.count) 个段落）"
+    }
+
+    private func finishPendingVerificationRead(error: String) {
+        guard isPreparingVerification else { return }
+        isPreparingVerification = false
+        verificationPreparationMessage = "读取失败：\(error)"
     }
 
     private func updateDetectionProgress(_ value: Double, stage: String) {

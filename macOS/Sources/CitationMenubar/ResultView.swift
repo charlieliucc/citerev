@@ -2,17 +2,19 @@ import SwiftUI
 import AppKit
 
 /// 结果窗口的 SwiftUI 主界面 —— 卡片形式（仿照 Word 加载项 taskpane 风格）。
-/// 底部导航栏：首页 / 审查 / 统计 / 设置（关于信息位于设置内）。
+/// 底部导航栏：首页 / 审查 / 真伪 / 统计 / 设置（关于信息位于设置内）。
 /// 点击卡片即可在 Word 中定位并选中原文。
 struct ResultView: View {
     @ObservedObject var model: ResultViewModel
     @State private var selectedSection: SectionID = .home
     @State private var selectedStatsTab = 0
     @State private var settingsPage: SettingsPage = .main
+    @StateObject private var verifierBrowser = VerifierBrowserModel()
 
     enum SectionID: String, CaseIterable, Identifiable {
         case home = "首页"
         case review = "审查"
+        case verify = "真伪"
         case stats = "统计"
         case settings = "设置"
         var id: String { rawValue }
@@ -21,6 +23,7 @@ struct ResultView: View {
             switch self {
             case .home: return "house"
             case .review: return "doc.text.magnifyingglass"
+            case .verify: return "checkmark.seal"
             case .stats: return "chart.bar"
             case .settings: return "gearshape"
             }
@@ -91,6 +94,8 @@ struct ResultView: View {
             homeView
         case .review:
             reviewContent
+        case .verify:
+            verificationContent
         case .stats:
             statsView
         case .settings:
@@ -405,6 +410,59 @@ struct ResultView: View {
         }
     }
 
+    // MARK: - 真伪检查（首次点击该导航项时才创建并加载 WKWebView）
+    private var verificationContent: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.seal")
+                    .font(.system(size: 22))
+                    .foregroundColor(Color(theme: Theme.accent))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("参考文献真伪检查")
+                        .font(.system(size: 18, weight: .bold))
+                    Text(model.verificationPreparationMessage)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Button {
+                    model.prepareVerificationFromActiveWord()
+                } label: {
+                    Label(
+                        model.verificationInputSnapshot == nil ? "读取 Word" : "重新读取",
+                        systemImage: "arrow.clockwise"
+                    )
+                }
+                .disabled(model.isPreparingVerification)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(theme: Theme.surface))
+
+            if model.isPreparingVerification {
+                ProgressView()
+                    .progressViewStyle(.linear)
+            }
+
+            if let error = verifierBrowser.loadError {
+                Text(error)
+                    .font(.system(size: 11))
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(Color(theme: Theme.surface))
+            }
+
+            VerifierWebView(
+                browser: verifierBrowser,
+                snapshot: model.verificationInputSnapshot
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
     private var reviewTopBar: some View {
         HStack(spacing: 10) {
             Image(systemName: "doc.text.magnifyingglass")
@@ -493,7 +551,7 @@ struct ResultView: View {
                         ])
 
                         aboutSectionTitle("隐私与安全")
-                        Text("**完全离线使用**。所有检测均在本地 Word 文档内完成，**不会上传任何内容**，无需联网。**本工具不收集任何数据**，不会记录、保存或向任何服务器发送你的文档、引用或操作信息，不必担心数据外泄。")
+                        Text("格式检查、引用一致性检查与统计均在本地完成。只有在用户进入“真伪”并点击“开始查验”后，App 才会把单条参考文献文本或 DOI 直接发送给 Crossref、OpenAlex 公开 API；请求不经过 CiteRev 自有服务器，App 不保存或上传完整 Word 文档。")
 
                         aboutSectionTitle("获取更新")
                         Text("本工具的新版本与更新说明会发布在 GitHub 仓库，前往查看或关注以获取最新功能与修复：")

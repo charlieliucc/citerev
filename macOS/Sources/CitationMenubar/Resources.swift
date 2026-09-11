@@ -25,4 +25,18 @@ enum AppResources {
     static func file(in subdir: String, named name: String) -> URL {
         return baseURL.appendingPathComponent(subdir).appendingPathComponent(name)
     }
+
+    /// Web verifier 的根目录。打包后位于 Contents/Resources/web；开发模式下
+    /// 兼容从仓库根目录或 macOS/ 目录执行 `swift run`。
+    static var webDirectory: URL? {
+        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let candidates = [
+            baseURL.appendingPathComponent("web", isDirectory: true),
+            cwd.appendingPathComponent("web", isDirectory: true),
+            cwd.deletingLastPathComponent().appendingPathComponent("web", isDirectory: true),
+        ]
+        return candidates.first {
+            FileManager.default.fileExists(atPath: $0.appendingPathComponent("verify.html").path)
+        }
+    }
 }

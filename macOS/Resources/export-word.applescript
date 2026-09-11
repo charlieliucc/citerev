@@ -14,9 +14,11 @@ on reportProgress(progressMessage)
 	log progressMessage
 end reportProgress
 
-on run
-	set TAB to tab -- \t
-	set NL to linefeed -- \n
+on run argv
+	set TAB to ASCII character 9 -- \t
+	set NL to ASCII character 10 -- \n
+	set includeFormatting to true
+	if (count of argv) > 0 and (item 1 of argv as text) is "text-only" then set includeFormatting to false
 
 	tell application "Microsoft Word"
 		try
@@ -25,7 +27,7 @@ on run
 			set paraCount to count of paras
 			-- Word 对“每个段落的 content”批量取值会返回 missing value 列表，不能直接使用。
 			-- 改为一次读取文档正文，再按 Word 段落标记（CR）在本地拆分；这样既正确，
-			-- 又省去最昂贵的逐段文本 Apple event。斜体状态仍逐段读取以保留格式检查。
+			-- 又省去最昂贵的逐段文本 Apple event。斜体状态也在下方批量读取。
 			set fullText to content of text object of theDoc as text
 			set AppleScript's text item delimiters to character id 13
 			set paraTexts to text items of fullText
@@ -36,6 +38,16 @@ on run
 			if progressStep < 1 then set progressStep to 1
 			my reportProgress("PROGRESS:0:" & n)
 
+			-- 一次 Apple event 批量取得段落斜体状态。旧实现逐段查询，长文档会
+			-- 产生数百至数千次同步调用，使 Word 长时间显示彩虹光标。
+			set italicValues to {}
+			set italicCount to 0
+			if includeFormatting then
+				try
+					set italicValues to italic of text object of every paragraph of theDoc
+					set italicCount to count of italicValues
+				end try
+			end if
 			-- 用列表累计后一次性拼接，避免大文档反复复制越来越长的字符串。
 			set outLines to {}
 			repeat with i from 1 to n
@@ -48,14 +60,14 @@ on run
 				set paraText to paraText as text
 				-- 压缩连续空格（可选，简单保留）
 
-				-- 读取整段是否斜体
+				-- 使用上面批量读取的结果；missing value 或混合格式按 false 处理，
+				-- 与旧实现只有明确 true 才标记整段斜体的语义一致。
 				set isItalic to false
-				try
-					set tr to text object of item i of paras
-					if italic of tr is true then
-						set isItalic to true
-					end if
-				end try
+				if includeFormatting and italicCount >= i then
+					try
+						if item i of italicValues is true then set isItalic to true
+					end try
+				end if
 
 				set end of outLines to paraText & TAB & (isItalic as text)
 				if (i mod progressStep is 0) or i is n then my reportProgress("PROGRESS:" & i & ":" & n)

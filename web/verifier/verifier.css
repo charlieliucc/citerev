@@ -217,7 +217,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
 .result:hover{box-shadow:0 6px 20px rgba(31,35,41,.08)}
 .result.v-authentic{border-top:3px solid var(--ok)}
 .result.v-notice,.result.v-unsure{border-top:3px solid var(--warn)}
-.result.v-notfound{border-top:3px solid var(--diff)}
+.result.v-notfound,.result.v-requesterror{border-top:3px solid var(--diff)}
 .result.v-checking{border-top:3px solid #c9cdd4}
 
 .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
@@ -226,7 +226,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
 .status-pill{font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;color:#fff;white-space:nowrap}
 .status-pill.authentic{background:var(--ok)}
 .status-pill.notice,.status-pill.unsure{background:var(--warn)}
-.status-pill.notfound{background:var(--diff)}
+.status-pill.notfound,.status-pill.requesterror{background:var(--diff)}
 .status-pill.checking{background:#a9aeb8}
 .status-sub{font-size:12px;color:var(--muted)}
 
@@ -236,7 +236,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
 .score-ring .pct{position:relative;font-weight:800;font-size:15px;color:var(--ring)}
 .score-ring.authentic{--ring:var(--ok)}
 .score-ring.notice,.score-ring.unsure{--ring:var(--warn)}
-.score-ring.notfound{--ring:var(--diff)}
+.score-ring.notfound,.score-ring.requesterror{--ring:var(--diff)}
 .score-ring.checking{--ring:#a9aeb8}
 
 .citation-text{margin:14px 0 10px;font-size:14px;line-height:1.65;color:var(--text);word-break:break-word}
@@ -249,7 +249,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
 
 .explanation{border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px;background:#f8fafc}
 .explanation.authentic{background:rgba(43,164,113,.06);border-color:rgba(43,164,113,.25)}
-.explanation.notfound{background:rgba(245,34,45,.05);border-color:rgba(245,34,45,.22)}
+.explanation.notfound,.explanation.requesterror{background:rgba(245,34,45,.05);border-color:rgba(245,34,45,.22)}
 .explanation.unsure,.explanation.notice{background:rgba(250,140,22,.06);border-color:rgba(250,140,22,.25)}
 .exp-title{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--text)}
 .exp-text{margin:0 0 8px;font-size:13px;line-height:1.6;color:#404a52}

@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        WordController.cancelAllScriptsForShutdown()
         if let quitHotKey { UnregisterEventHotKey(quitHotKey) }
         if let hideHotKey { UnregisterEventHotKey(hideHotKey) }
         if let closeHotKey { UnregisterEventHotKey(closeHotKey) }
@@ -289,6 +290,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quitApp() {
+        WordController.cancelAllScriptsForShutdown()
         windowController?.closeWindow()
         NSApp.terminate(nil)
     }

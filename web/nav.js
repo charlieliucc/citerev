@@ -10,6 +10,14 @@
 (function () {
   "use strict";
 
+  // 原生 macOS App 使用自己的 SwiftUI 导航；只隐藏 Web 全站导航，
+  // verifier 页面内的导入、开始查验、暂停等操作仍然保留。
+  if (document.documentElement.dataset.platform === "macos" ||
+      new URLSearchParams(window.location.search).get("platform") === "macos") {
+    document.documentElement.dataset.platform = "macos";
+    return;
+  }
+
   // 选项卡模式下，iframe 内部页面不再注入顶部导航栏（外层已有），避免双层
   if (window.self !== window.top) return;
 

@@ -30,7 +30,8 @@
 
 - ✅ 真正的原生 `.app`，用户不需要装 Python、不需要装 Node、不需要 Xcode
 - ✅ 检测逻辑与原来完全一致（复用同一套 `engine/` JS 规则）
-- ✅ 完全离线，无需联网
+- ✅ 格式检查、引用一致性检查与统计完全离线；真伪检查仅在用户点击“开始查验”后联网
+- ✅ 真伪检查复用内置 Web verifier，直接查询 Crossref/OpenAlex，不经过 CiteRev 自有服务器
 - ✅ **打开程序即自动展示审查窗口**（若未检测到 Word 文档，会提示打开并给「开始检测」按钮）
 - ✅ 菜单栏 📚 图标：**左键点击直接打开审查窗口**，右键点击弹出菜单
 - ✅ 窗口默认**停靠在屏幕右侧**（留边距不溢出）且**永远在最前**（浮层）
@@ -100,6 +101,13 @@
 └────────────────────────────────────────────┘
 ```
 
+## 真伪检查与隐私
+
+Word 读取成功后，App 只在当前进程内保存一份真伪检查输入快照，不写入磁盘或
+`UserDefaults`。用户首次点击底部“真伪”时才加载随 App 打包的本地 WKWebView 并
+注入快照；只有用户随后点击页面中的“开始查验”，才会向 Crossref/OpenAlex 发送
+单条参考文献文本或 DOI。格式检查、引用一致性检查和统计仍保持离线运行。
+
 > 关键点：`detect.js` 原本依赖 Node 的 `fs` / `process`，重写版把其中的**纯算法函数**
 > 抽到 `Resources/driver.js`，并提供 `prelude.js` 模拟 `window` / `localStorage`，
 > 让这些规则能直接用 JavaScriptCore 运行，从而彻底去掉 Node 依赖。
@@ -116,6 +124,7 @@ word-citation-menubar-swift/
 │   ├── ResultWindowController.swift
 │   ├── ResultView.swift       # SwiftUI 卡片界面 + 统计视图
 │   ├── ResultViewModel.swift  # 状态 / 后台检测 / 无文档提示
+│   ├── VerifierWebView.swift  # 按需加载的 WKWebView 与内存快照注入
 │   ├── DetectionEngine.swift  # JavaScriptCore 引擎封装
 │   ├── WordController.swift   # 调用 AppleScript 读/定位 Word
 │   ├── Problem.swift          # 数据模型 + 分类颜色 + 统计模型
@@ -127,6 +136,7 @@ word-citation-menubar-swift/
 │   ├── export-word.applescript
 │   ├── locate.applescript     # 定位首个命中
 │   └── locate-nth.applescript # 定位第 N 个命中（统计上一个/下一个）
+├── ../web/                    # Web verifier 唯一源码，make app 时复制进 App
 └── dist/                      # 打包产物（make app 生成）
     └── 引用审查.app
 ```

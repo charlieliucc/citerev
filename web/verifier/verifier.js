@@ -1,3 +1,5 @@
+const isMacOSHost = document.documentElement.dataset.platform === 'macos' ||
+  new URLSearchParams(window.location.search).get('platform') === 'macos';
 if (new URLSearchParams(window.location.search).get('embed') === '1') {
   document.documentElement.classList.add('embed-mode');
 }
@@ -7,7 +9,7 @@ const sample = `Bader, M., Burner, T., Hoem Iversen, S., & Varga, Z. (2019). Stu
 1. Tsien JZ. The memory engine of the brain. Nature. 2013;495(7441):295-297.
 Bader, Michael, et al. "Student perspectives on formative feedback as part of writing portfolios." Assessment & Evaluation in Higher Education, vol. 44, no. 7, 2019, pp. 1017-1028.`;
 
-const {normalizeBreaks,splitReferences,groupReferenceLines}=window.CitationReferenceSplitter;
+const {normalizeBreaks,splitReferences,splitDocumentSections,groupReferenceLines,isReferenceEndHeading}=window.CitationReferenceSplitter;
 
 // 归一化前先剥掉来源数据可能带的 HTML 标签（如 <i>斜体</i>）与实体（如 &amp;），再统一转小写、去标点
 function stripMarkup(v){return String(v).replace(/<[^>]*>/g,"").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&quot;/gi,'"').replace(/&#39;/gi,"'");}
@@ -98,6 +100,8 @@ function extractDOI(text){
 // —— 整篇论文：定位 References / Bibliography 小节（参照 referenceverify 的 sliceArticle，去除土耳其文）——
 // 优先按分节标题切开；无标题时按“关键词+编号”或“从末尾向上扫”兜底；都找不到则整段当作参考文献
 function sliceArticle(e){
+  const shared=splitDocumentSections(e);
+  if(shared.found)return{found:true,body:shared.body,references:shared.references};
   // 1) 首选：标题正则（英文，容忍编号与 #* 等符号），命中即从标题后切开
   let t,a=/(^|\n)[ \t#*0-9.)\-–—]*\b(references?|reference list|works cited|bibliography)\b[ \t.:·•0-9\-–—]*(?=\n|$)/gi,i=-1,r=-1;
   for(;null!==(t=a.exec(e));){i=t.index+t[1].length;r=a.lastIndex;}
@@ -228,7 +232,11 @@ function splitBodyAndReferences(paragraphs){
     if(line.length<=60&&REF_HEADING_RE.test(line)){headingIdx=i;break;}
   }
   if(headingIdx<0)return{found:false,refsParagraphs:[],headingText:""};
-  let refParas=paragraphs.slice(headingIdx+1);
+  let endIdx=paragraphs.length;
+  for(let i=headingIdx+1;i<paragraphs.length;i++){
+    if(isReferenceEndHeading(paragraphs[i].text||"")){endIdx=i;break;}
+  }
+  let refParas=paragraphs.slice(headingIdx+1,endIdx);
   const filtered=refParas.filter(p=>!TRAILING_META_RE.test(p.text||""));
   return{found:true,refsParagraphs:filtered,headingText:paragraphs[headingIdx].text};
 }
@@ -574,21 +582,25 @@ function assess(original,r,sources,sensitivity){
 }
 async function check(original){
   const p=parseRef(original),sources=[];
-  let crossCands=[],openCands=[];
+  let crossCands=[],openCands=[],crossrefOK=false,openalexOK=false;
   try{
     const u=p.doi?`https://api.crossref.org/works/${encodeURIComponent(p.doi)}`:`https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(original)}&rows=3`;
     const z=await fetch(u);
-    if(z.ok){const j=await z.json();const xs=Array.isArray(j.message?.items)?j.message.items:[j.message];crossCands=xs.filter(Boolean).map(cross);if(crossCands.length)sources.push("Crossref");}
+    if(z.ok){crossrefOK=true;const j=await z.json();const xs=Array.isArray(j.message?.items)?j.message.items:[j.message];crossCands=xs.filter(Boolean).map(cross);if(crossCands.length)sources.push("Crossref");}
+    else if(z.status===404)crossrefOK=true;
   }catch(e){}
   try{
     const q=p.doi?`filter=doi:${encodeURIComponent(p.doi)}`:`search=${encodeURIComponent(original)}`;
     const z=await fetch(`https://api.openalex.org/works?${q}&per-page=3`);
-    if(z.ok){const j=await z.json();openCands=(j.results||[]).map(open);if(openCands.length)sources.push("OpenAlex");}
+    if(z.ok){openalexOK=true;const j=await z.json();openCands=(j.results||[]).map(open);if(openCands.length)sources.push("OpenAlex");}
+    else if(z.status===404)openalexOK=true;
   }catch(e){}
   const pool=crossCands.length?crossCands:openCands;
   pool.sort((a,b)=>sim(original,sourceText(b))-sim(original,sourceText(a)));
   const sensitivity=(document.getElementById("sensitivity")||{}).value||"high";
-  return pool[0]?assess(original,pool[0],sources,sensitivity):{original,parsed:p,score:0,status:"unmatched",issues:["未在当前公开索引中找到可信记录；这不等于文献不存在"],sources:sources.length?sources:["Crossref","OpenAlex"],sensitivity};
+  if(pool[0])return assess(original,pool[0],sources,sensitivity);
+  if(!crossrefOK&&!openalexOK)return{original,parsed:p,score:0,status:"request-error",issues:["核验请求失败，请检查网络或稍后重试"],sources:["Crossref","OpenAlex"],sensitivity};
+  return{original,parsed:p,score:0,status:"unmatched",issues:["未在当前公开索引中找到可信记录；这不等于文献不存在"],sources:[crossrefOK&&"Crossref",openalexOK&&"OpenAlex"].filter(Boolean),sensitivity};
 }
 function esc(s){
   s=(s||"").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'");
@@ -614,10 +626,12 @@ const VERDICTS={
   authentic:{label:"已验证",sub:"来源已找到"},
   notice:{label:"已找到来源",sub:"存在差异"},
   unsure:{label:"暂不确定",sub:"需要复核"},
+  requesterror:{label:"请求失败",sub:"请检查网络"},
   notfound:{label:"未找到来源",sub:"需要进一步核验"}
 };
 function verdictOf(r){
   if(r.status==="checking")return"checking";
+  if(r.status==="request-error")return"requesterror";
   if(!r.record)return"notfound";
   if(r.status==="matched"||(r.score||0)===100)return"authentic";
   // 来源存在、置信度高 → 已找到来源但有差异；置信度偏低 → 暂不确定。
@@ -633,6 +647,7 @@ function explanationOf(r,v){
     const differences=(r.fieldChecks||[]).filter(field=>field.status==="mismatch"||field.status==="review");
     return{title:differences.length?"需复核字段":"",text:"",bullets:differences.map(field=>`${field.label}：来源原信息为 ${field.value||"—"}${field.note?`（${field.note}）`:""}`)};
   }
+  if(v==="requesterror")return{title:"联网核验未完成",text:(r.issues&&r.issues[0])||"核验请求失败，请检查网络或稍后重试。",bullets:[]};
   if(v==="notfound")return{title:"需要进一步核验",text:(r.issues&&r.issues[0])||"在学术数据库中未找到匹配的来源记录。",bullets:[]};
   return{title:"",text:"正在检索并核对来源字段…",bullets:[]};
 }
@@ -754,7 +769,7 @@ let incomingRefsHtml="";
 try{incomingRefsHtml=(localStorage.getItem("citationReviewerRefsHtml")||"").trim();}catch(e){incomingRefsHtml="";}
 if(incomingRefs){ if(incomingRefsHtml)setRefsHtml(incomingRefsHtml);else setRefsText(incomingRefs); try{ localStorage.removeItem("citationReviewerRefs");localStorage.removeItem("citationReviewerRefsHtml"); }catch(e){} 
   // 从引用审查页跳转而来：自动开始核验并定位到结果区
-  requestAnimationFrame(()=>{ runBtn.click(); });
+  if(!isMacOSHost)requestAnimationFrame(()=>{ runBtn.click(); });
 }
 else{ refsEl.innerHTML=""; }
 updateCount();
@@ -845,7 +860,7 @@ runBtn.addEventListener("click",async()=>{
     progressFill.style.width=`${Math.round(done/total*100)}%`;
     progressText.innerHTML=`正在核验第 <b>${i+1}</b> / ${total} 条…`;
     progressPct.textContent=`${Math.round(done/total*100)}%`;
-    try{ state[i]=await check(refs[i]); }catch(e){ state[i]={original:refs[i],parsed:parseRef(refs[i]),score:0,status:"unmatched",issues:["核验请求出错，请稍后重试"],sources:["Crossref","OpenAlex"]}; }
+    try{ state[i]=await check(refs[i]); }catch(e){ state[i]={original:refs[i],parsed:parseRef(refs[i]),score:0,status:"request-error",issues:["核验请求失败，请检查网络或稍后重试"],sources:["Crossref","OpenAlex"],sensitivity:sensitivityEl.value||"high"}; }
     state[i].originalHtml=originalHtmlFor(refs[i],richBlocks);
     render(state);
     if(i<total-1)await sleep(500+Math.random()*600); // 随机限速 0.5s 起，降低被限流/拒绝的概率

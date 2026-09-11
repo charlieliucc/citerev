@@ -18,6 +18,23 @@
     return /^(?:[A-Z\p{Lu}][\p{L}'’.-]+(?:\s+[A-Z\p{Lu}][\p{L}'’.-]+){0,5}\s*,|[A-Z\p{Lu}][\p{L}'’.-]+\s+(?:[A-Z]\.?\s*){1,4}(?:,|\s)|[^.!?\n]{2,120}\.\s*\((?:19|20)\d{2}|[\p{Script=Han}]{2,}(?:[，,、]|\s))/u.test(text);
   }
 
+  function isReferenceEndHeading(line=""){
+    const text=String(line).replace(/\s+/g," ").trim();
+    if(!text||text.length>90)return false;
+    if(/^(?:\d+[.)]\s*)?(?:appendix|appendices)(?:\s+[A-Z0-9IVX]+)?(?:\s*[:.\-–—]\s*[^.!?]{1,60})?$/i.test(text))return true;
+    return /^(?:\d+[.)]\s*)?附录(?:\s*[A-Z0-9IVX一二三四五六七八九十]+)?(?:\s*[:：.\-–—]\s*[^。！？]{1,60})?$/.test(text);
+  }
+
+  function referenceEndOffset(text=""){
+    const source=String(text),lines=source.split("\n");
+    let offset=0;
+    for(const line of lines){
+      if(isReferenceEndHeading(line))return offset;
+      offset+=line.length+1;
+    }
+    return source.length;
+  }
+
   function splitReferences(text=""){
     const source=normalizeBreaks(text);
     const bracketed=source.match(/(?:^|\n|\s)\[\d+\]\s+/g);
@@ -75,10 +92,12 @@
     let match,last=null;
     while((match=heading.exec(source)))last={start:match.index+match[1].length,end:heading.lastIndex,label:match[0].trim()};
     if(!last)return{found:false,body:"",references:source.trim(),heading:""};
+    const referenceSource=source.slice(last.end);
+    const endOffset=referenceEndOffset(referenceSource);
     return{
       found:true,
       body:source.slice(0,last.start).trim(),
-      references:source.slice(last.end).trim(),
+      references:referenceSource.slice(0,endOffset).trim(),
       heading:last.label
     };
   }
@@ -117,6 +136,7 @@
     MIN_REFERENCE_LENGTH,
     normalizeBreaks,
     isLikelyReferenceStart,
+    isReferenceEndHeading,
     splitReferences,
     splitDocumentSections,
     groupReferenceLines

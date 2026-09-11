@@ -1,8 +1,16 @@
 import Foundation
+import Darwin
 
 /// 通过 AppleScript（osascript）与 Microsoft Word 交互。
 /// 复用原有的 export-word.applescript 与 locate.applescript。
 enum WordController {
+
+    /// Word 的 AppleScript 接口不适合并发访问。预读取、正式检测和真伪读取
+    /// 共用这一把锁，避免多个 osascript 同时让 Word 长时间无响应。
+    private static let automationSemaphore = DispatchSemaphore(value: 1)
+    private static let processLock = NSLock()
+    private static var activeProcesses: [Int32: Process] = [:]
+    private static var isShuttingDown = false
 
     struct DocumentIdentity: Equatable {
         let name: String
@@ -49,6 +57,14 @@ enum WordController {
         timeout: TimeInterval = 180,
         progress: ((Double) -> Void)? = nil
     ) -> (Int32, String) {
+        automationSemaphore.wait()
+        defer { automationSemaphore.signal() }
+
+        processLock.lock()
+        let shouldAbort = isShuttingDown
+        processLock.unlock()
+        if shouldAbort { return (1, "CANCELLED") }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         var args = [script.path]
@@ -67,6 +83,21 @@ enum WordController {
             try process.run()
         } catch {
             return (-1, "无法启动 osascript: \(error.localizedDescription)")
+        }
+
+        processLock.lock()
+        if isShuttingDown {
+            processLock.unlock()
+            process.terminate()
+            process.waitUntilExit()
+            return (1, "CANCELLED")
+        }
+        activeProcesses[process.processIdentifier] = process
+        processLock.unlock()
+        defer {
+            processLock.lock()
+            activeProcesses.removeValue(forKey: process.processIdentifier)
+            processLock.unlock()
         }
 
         // 立即在独立队列读取输出，避免大文档填满 pipe 后让 osascript 阻塞。
@@ -116,6 +147,26 @@ enum WordController {
         return (process.terminationStatus, out)
     }
 
+    /// 应用退出时停止所有由本应用启动的 Word 自动化进程。先发 SIGTERM，
+    /// 短暂等待清理；仍未结束时只强制终止已登记的 osascript 子进程。
+    static func cancelAllScriptsForShutdown() {
+        processLock.lock()
+        isShuttingDown = true
+        let processes = Array(activeProcesses.values)
+        processLock.unlock()
+
+        for process in processes where process.isRunning {
+            process.terminate()
+        }
+        let deadline = Date().addingTimeInterval(1.0)
+        while Date() < deadline, processes.contains(where: { $0.isRunning }) {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        for process in processes where process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+        }
+    }
+
     /// 解析 osascript 的 `log "PROGRESS:current:total"` stderr 输出。
     /// 实际行通常形如 `(*PROGRESS:12:40*)`。
     private static func parseScriptProgress(_ line: String) -> Double? {
@@ -129,12 +180,16 @@ enum WordController {
     }
 
     /// 读取当前 Word 文档的全部段落（文本 + 整段是否斜体）。
-    static func readParagraphs(progress: ((Double) -> Void)? = nil) throws -> [WordParagraph] {
+    static func readParagraphs(
+        includeFormatting: Bool = true,
+        progress: ((Double) -> Void)? = nil
+    ) throws -> [WordParagraph] {
         let script = AppResources.file(named: "export-word.applescript")
         guard FileManager.default.fileExists(atPath: script.path) else {
             throw WordError.missingScript
         }
-        let (code, rawOut) = runScript(script, progress: progress)
+        let arguments = includeFormatting ? [] : ["text-only"]
+        let (code, rawOut) = runScript(script, arguments: arguments, progress: progress)
         let out = rawOut.trimmingCharacters(in: .whitespacesAndNewlines)
         if code != 0 {
             // 判断是否因「未打开文档 / 无活动文档」导致

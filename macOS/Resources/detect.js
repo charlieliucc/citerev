@@ -280,6 +280,12 @@ function isLikelyReferenceEntry(text, rules){
   if(t.length < 15) return false;
   return /^[A-Z\u00C0-\u017F]/.test(t);
 }
+function isReferenceEndHeading(text){
+  const t = (text || '').replace(/\s+/g, ' ').trim();
+  if(!t || t.length > 90) return false;
+  if(/^(?:\d+[.)]\s*)?(?:appendix|appendices)(?:\s+[A-Z0-9IVX]+)?(?:\s*[:.\-–—]\s*[^.!?]{1,60})?$/i.test(t)) return true;
+  return /^(?:\d+[.)]\s*)?附录(?:\s*[A-Z0-9IVX一二三四五六七八九十]+)?(?:\s*[:：.\-–—]\s*[^。！？]{1,60})?$/.test(t);
+}
 function splitBodyAndReferences(paragraphs){
   const rules = window.RulesManager.getCurrent();
   let headingIdx = -1;
@@ -296,7 +302,11 @@ function splitBodyAndReferences(paragraphs){
     };
   }
   const bodyParagraphs = paragraphs.slice(0, headingIdx).filter(p => p.text);
-  let refParas = paragraphs.slice(headingIdx + 1).filter(p => p.text);
+  let endIdx = paragraphs.length;
+  for(let i = headingIdx + 1; i < paragraphs.length; i++){
+    if(isReferenceEndHeading(paragraphs[i].text)){ endIdx = i; break; }
+  }
+  let refParas = paragraphs.slice(headingIdx + 1, endIdx).filter(p => p.text);
   const TRAILING_META_RE = /^\s*(word\s*count|words\s*:|page\s*count|pages\s*:|character\s*count|characters\s*:)/i;
   refParas = refParas.filter(p => {
     const t = p.text || "";
