@@ -108,7 +108,7 @@
     const infos = blocks.map(extractLineInfo);
     const groups = window.CitationReferenceSplitter.groupReferenceLines(infos, info => info.text);
 
-    return groups.map(g => {
+    const result = groups.map(g => {
       let text = '';
       const italics = [];
       const bolds = [];
@@ -128,6 +128,17 @@
         page: g[0].page || null
       };
     });
+    if(currentSourceType === 'pdf' && lastReferenceSourceBlocks.length === result.length){
+      result.forEach((block, index) => {
+        const source = lastReferenceSourceBlocks[index];
+        if(!source) return;
+        block.sourceSpans = source.sourceSpans || [];
+        block.pages = source.pages || [];
+        block.page = source.page || block.page;
+        block.pageEnd = source.pageEnd || block.page;
+      });
+    }
+    return result;
   }
 
 
@@ -216,6 +227,12 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
   function clearAll(){
     commentState.clear();
     lastBodyParagraphs = null;
+    lastBodySourceBlocks = [];
+    lastReferenceSourceBlocks = [];
+    currentSourceType = 'paste';
+    currentPdfBytes = null;
+    currentPdfLabels = null;
+    if(pdfViewer) pdfViewer.destroy();
     hidePageStatus();
     const tbClear = document.getElementById('txtBody');
     if(tbClear){ tbClear.value = ''; }
@@ -493,7 +510,55 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
     importMsgTimer = setTimeout(() => { el.className = "importMsg"; }, 12000);
   }
 
-  let lastBodyParagraphs = null; // 导入 Word 后保留的正文段落（含原文件页码）；手动输入时为 null
+  let lastBodyParagraphs = null; // 导入后保留的正文段落（含原文件页码）；手动输入时为 null
+  let lastBodySourceBlocks = [];
+  let lastReferenceSourceBlocks = [];
+  let currentSourceType = 'paste';
+  let currentPdfBytes = null;
+  let currentPdfLabels = null;
+  let pdfViewer = null;
+  const commentSourceAnchors = new Map();
+
+  function ensurePdfViewer(){
+    let container = document.getElementById('pdfSourceView');
+    if(!container){
+      container = document.createElement('div');
+      container.id = 'pdfSourceView';
+      container.className = 'pdf-source-view';
+      container.hidden = true;
+      const bar = document.querySelector('#docView .doc-view-bar');
+      bar?.insertAdjacentElement('afterend', container);
+    }
+    if(!pdfViewer && window.CitationPdfImporter?.createViewer) pdfViewer = window.CitationPdfImporter.createViewer(container);
+    return { container, viewer: pdfViewer };
+  }
+
+  function anchorFromBlock(block, index){
+    const source = block?.sourceSpans?.length ? block : lastReferenceSourceBlocks[index];
+    if(!source?.sourceSpans?.length) return null;
+    return { page:source.page || source.sourceSpans[0].page, pageEnd:source.pageEnd || source.page, sourceSpans:source.sourceSpans };
+  }
+
+  function bodySourceAtRange(bodyText, start, end){
+    if(start == null || !lastBodySourceBlocks.length) return null;
+    let cursor = 0;
+    const regions = [];
+    for(const block of lastBodySourceBlocks){
+      if(!block?.text) continue;
+      let blockStart = bodyText.indexOf(block.text, cursor);
+      if(blockStart < 0) blockStart = cursor;
+      const blockEnd = blockStart + block.text.length;
+      if(start < blockEnd && (end == null || end > blockStart)){
+        const localStart = Math.max(0, start - blockStart);
+        const localEnd = Math.min(block.text.length, (end == null ? start + 1 : end) - blockStart);
+        const matching = (block.sourceSpans || []).filter(span => span.end > localStart && span.start < localEnd);
+        regions.push(...(matching.length ? matching : block.sourceSpans || []));
+      }
+      cursor = blockEnd;
+    }
+    if(!regions.length) return null;
+    return { page:regions[0].page, pageEnd:regions[regions.length-1].page, sourceSpans:regions };
+  }
   async function importWordFile(file){
     if(!file) return;
     const name = (file.name || "").toLowerCase();
@@ -512,6 +577,12 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
     }
 
     const { body, bodyParagraphs, refsParagraphs, note } = splitBodyAndReferences(fullText);
+    currentSourceType = 'word';
+    currentPdfBytes = null;
+    currentPdfLabels = null;
+    lastBodySourceBlocks = [];
+    lastReferenceSourceBlocks = [];
+    if(pdfViewer) pdfViewer.destroy();
     lastBodyParagraphs = (fullText.hasPageInfo && bodyParagraphs && bodyParagraphs.length) ? bodyParagraphs : null;
     const txtBodyEl = document.getElementById("txtBody");
     if(txtBodyEl){ txtBodyEl.value = body; }
@@ -534,13 +605,61 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
     }
   }
 
+  async function applyPdfDocument(result, fileName, autoRun){
+    currentSourceType = 'pdf';
+    currentPdfBytes = result.pdfBytes || currentPdfBytes;
+    currentPdfLabels = result.pageLabels || currentPdfLabels;
+    lastBodySourceBlocks = Array.isArray(result.bodyBlocks) ? result.bodyBlocks : [];
+    lastReferenceSourceBlocks = Array.isArray(result.referenceBlocks) ? result.referenceBlocks : [];
+    lastBodyParagraphs = lastBodySourceBlocks.filter(block => block?.text).map(block => ({ text:block.text, page:Number(block.page)||null }));
+    const body = document.getElementById('txtBody');
+    if(body) body.value = result.body || result.bodyText || '';
+    editor.innerHTML = sanitizeEditorHtml(lastReferenceSourceBlocks.map(block => `<div${Number(block.page)>0?` data-page="${Number(block.page)}"`:''}>${block.html || escapeHtml(block.text || '')}</div>`).join(''));
+    Array.from(editor.children).forEach((line,index) => {
+      const page = Number(lastReferenceSourceBlocks[index]?.page);
+      if(page > 0) line.dataset.page = String(page);
+    });
+    const { container, viewer } = ensurePdfViewer();
+    container.hidden = false;
+    if(currentPdfBytes && viewer && !result.pdfDocumentRetained) await viewer.load(currentPdfBytes, currentPdfLabels);
+    updateFileNameBadge(fileName || '');
+    try { localStorage.setItem('cr_current_file', fileName || ''); } catch(_) {}
+    if(autoRun) runCheck();
+  }
+
+  async function importPdfFile(file){
+    if(!file) return;
+    if(!window.CitationPdfImporter?.parse){ showImportMsg('err', 'PDF 解析模块未加载，请刷新页面后重试。'); return; }
+    showImportMsg('', '正在本地解析 PDF…');
+    try{
+      const result = await window.CitationPdfImporter.parse(file, (page,total) => showImportMsg('', `正在本地解析 PDF：${page} / ${total} 页…`));
+      await applyPdfDocument(result, file.name, true);
+      const range = result.referenceBlocks?.some(block => block.pageEnd && block.pageEnd !== block.page) ? '，已合并跨页参考文献' : '';
+      const style = result.styleInfoAvailable ? '，已读取字体与斜体信息' : '；未检测到可用的斜体信息';
+      showImportMsg('ok', `已从 PDF 导入：共 ${result.pageCount} 页、约 ${result.referenceBlocks?.length || 0} 条参考文献${range}${style}。点击右侧批注可定位到原 PDF。`);
+    }catch(e){
+      showImportMsg('err', '读取 PDF 失败：' + (e?.message || e));
+      try { localStorage.removeItem('cr_current_file'); } catch(_) {}
+    }
+  }
+
   // ==================================================================
   // 视图切换 / 高亮 / 批注渲染
   // ==================================================================
   function showReview(){
     document.getElementById('editArea').hidden = true;
     document.getElementById('docView').hidden = false;
-    if(lastBodyParagraphs) showPageStatus(); else hidePageStatus();
+    const pdfMode = currentSourceType === 'pdf' && !!currentPdfBytes;
+    const pdfSource = document.getElementById('pdfSourceView');
+    if(pdfSource) pdfSource.hidden = !pdfMode;
+    const body = document.getElementById('docBody');
+    const refsTitle = document.querySelector('#docView .doc-refs-title');
+    const refs = document.getElementById('docRefs');
+    if(body) body.hidden = pdfMode || (checkMode === 'refs');
+    if(refsTitle) refsTitle.hidden = pdfMode;
+    if(refs) refs.hidden = pdfMode;
+    if(pdfMode){ hidePageStatus(); pdfViewer?.render(); }
+    else if(lastBodyParagraphs) showPageStatus(); else hidePageStatus();
   }
   function showEdit(){
     document.getElementById('docView').hidden = true;
@@ -655,6 +774,12 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
     if(hl) flashEl(hl, 'flash-hl');
   }
   function scrollToHighlight(cmid){
+    if(currentSourceType === 'pdf' && pdfViewer){
+      pdfViewer.locate(commentSourceAnchors.get(cmid));
+      const pdfComment = document.querySelector(`#cmList .cm-card[data-cmid="${cmid}"]`);
+      if(pdfComment) flashEl(pdfComment, 'flash-cm');
+      return;
+    }
     const hl = document.querySelector(`#docView [data-cmid="${cmid}"], #docView [data-cmids~="${cmid}"]`);
     const cm = document.querySelector(`#cmList .cm-card[data-cmid="${cmid}"]`);
     activateHl(cmid);
@@ -678,6 +803,8 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
   function renderComments(comments){
     const list = document.getElementById('cmList');
     list.innerHTML = '';
+    commentSourceAnchors.clear();
+    comments.forEach(comment => { if(comment.cmid && comment.sourceAnchor) commentSourceAnchors.set(comment.cmid, comment.sourceAnchor); });
     // 可见批注 = 既不「忽略」也不「已解决(隐藏)」；已解决但重新显示的照常计入
     const visible = comments.filter(c => {
       const s = commentStatus(c.cmid);
@@ -997,6 +1124,7 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
             color: 'unused',
             tag: '未被引用',
             page: b.page || null,
+            sourceAnchor: anchorFromBlock(b, i),
             quoteHtml: b.html || escapeHtml(b.text),
             desc: '该参考文献未在正文中被引用，请确认是否需要删除或补充正文引用。'
           });
@@ -1015,6 +1143,7 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
             color: 'format',
             tag: '格式问题',
             page: b.page || null,
+            sourceAnchor: anchorFromBlock(b, i),
             quoteHtml: b.html || escapeHtml(b.text),
             desc: `<div class="cm-issues">${issueHtml}</div>`
           });
@@ -1033,13 +1162,14 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
       comments.push({
         cmid: 'm' + i, color: 'missing', tag: '引用缺失',
         page: bodyPageAtOffset(bodyNorm, cite.start),
+        sourceAnchor: bodySourceAtRange(bodyNorm, cite.start, cite.end),
         quote: cite.raw, count: countByKey.get(cite.key) || 1,
         desc: '正文中出现该引用（作者 + 年份），但未在参考文献列表中找到「作者 + 年份」完全匹配的条目。若参考文献中存在同作者但年份不同的条目，可能是文中或参考文献的年份书写有误，请自行核对是否为同一篇文献；否则请补充对应参考文献。'
       });
     });
 
     // ---- 批注：In-Text 精细检测（mismatch / style）----
-    inTextComments.forEach(c => { if(!c.cmid) c.cmid = 'y' + inTextComments.indexOf(c);c.page=bodyPageAtOffset(bodyNorm,c.start);comments.push(c); });
+    inTextComments.forEach(c => { if(!c.cmid) c.cmid = 'y' + inTextComments.indexOf(c);c.page=bodyPageAtOffset(bodyNorm,c.start);c.sourceAnchor=bodySourceAtRange(bodyNorm,c.start,c.end);comments.push(c); });
 
     // ---- 批注：未被引用 ----
     unusedComments.forEach(c => comments.push(c));
@@ -1050,7 +1180,9 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
     renderComments(comments.filter(c => isTypeEnabled(c.color)), {});
 
     showReview();
-    if(lastBodyParagraphs) showPageStatus(); else hidePageStatus();
+    if(currentSourceType === 'pdf') hidePageStatus();
+    else if(lastBodyParagraphs) showPageStatus();
+    else hidePageStatus();
   }
 
   // ==================================================================
@@ -1287,11 +1419,15 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
   document.getElementById("fileInput").addEventListener("change", async (e) => {
     const file = e.target.files && e.target.files[0];
     document.documentElement.dataset.wordImportState = "running";
+    document.documentElement.dataset.documentImportState = "running";
     try {
-      await importWordFile(file);
+      if(file && (/\.pdf$/i.test(file.name || '') || file.type === 'application/pdf')) await importPdfFile(file);
+      else await importWordFile(file);
     } finally {
       document.documentElement.dataset.wordImportState = "done";
+      document.documentElement.dataset.documentImportState = "done";
       document.documentElement.dataset.wordImportMessage = document.getElementById("importMsg")?.textContent || "";
+      document.documentElement.dataset.documentImportMessage = document.getElementById("importMsg")?.textContent || "";
       e.target.value = "";
     }
   });
@@ -1388,10 +1524,24 @@ Policy has also begun to respond to these findings. The Ministry of Science (202
   if(_docScroll) _docScroll.addEventListener('scroll', updatePageStatus, { passive: true });
   window.addEventListener('resize', updatePageStatus);
 
-  // 统一工作区入口：接收首页已解析的正文、富文本参考文献和原 Word 页码。
+  // 统一工作区入口：接收首页已解析的正文、富文本参考文献和原文件定位信息。
   window.CitationReviewerPage = Object.freeze({
     applyWorkspaceDocument(d){
       d = d || {};
+      if(d.sourceType === 'pdf'){
+        applyPdfDocument({
+          ...d,
+          body:d.bodyText || '',
+          references:d.referencesText || ''
+        }, d.fileName || '', false).catch(error => showImportMsg('err', 'PDF 原文视图加载失败：' + (error?.message || error)));
+        return;
+      }
+      currentSourceType = d.sourceType || 'paste';
+      currentPdfBytes = null;
+      currentPdfLabels = null;
+      lastBodySourceBlocks = [];
+      lastReferenceSourceBlocks = [];
+      if(pdfViewer) pdfViewer.destroy();
       const body = document.getElementById('txtBody');
       if(body) body.value = d.bodyText || '';
       lastBodyParagraphs = d.hasPageInfo && Array.isArray(d.bodyBlocks)

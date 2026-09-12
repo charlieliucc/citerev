@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="workspace.css?v=20260818-typing-slogan">
   <link rel="stylesheet" href="nav.css">
   <script src="reference-splitter.js"></script>
+  <script src="pdf-import.js?v=20260911-pdf2"></script>
   <script src="report-engine.js?v=20260818-rich2"></script>
 </head>
 <body>
@@ -29,11 +30,11 @@
   </header>
   <div class="workspace-subnav" aria-label="文档操作">
     <div class="workspace-actions">
-      <button class="workspace-btn" id="workspaceImport">导入 Word 文档</button>
+      <button class="workspace-btn" id="workspaceImport">导入 Word / PDF</button>
       <button class="workspace-btn" id="workspaceClear">清空</button>
       <button type="button" class="workspace-start-btn" id="workspaceStartBtn">开始</button>
       <span class="workspace-file-name" id="workspaceFileName" hidden></span>
-      <input id="workspaceFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <input id="workspaceFile" type="file" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
     </div>
   </div>
   <main>
@@ -42,7 +43,7 @@
     </div>
     <section class="workspace-start" id="workspaceStart">
       <h1>先导入或粘贴文档</h1>
-      <p>文档只在浏览器本地解析。粘贴内容后，点击顶部的全文检查、格式检查、真伪检查或一键分析进入对应功能。</p>
+      <p>Word 与 PDF 文档只在浏览器本地解析。粘贴内容后，点击顶部的全文检查、格式检查、真伪检查或一键分析进入对应功能。</p>
       <div id="workspaceInput" class="workspace-input" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" data-placeholder="粘贴论文全文，或粘贴参考文献列表……"></div>
       <p class="workspace-message" id="workspaceMessage" aria-live="polite"></p>
     </section>
@@ -50,6 +51,6 @@
       <iframe class="workspace-frame" id="workspaceFrame" title="引用审查功能"></iframe>
     </section>
   </main>
-  <script src="workspace.js?v=20260818-embed-subnav"></script>
+  <script src="workspace.js?v=20260911-pdf2"></script>
 </body>
 </html>

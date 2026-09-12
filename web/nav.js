@@ -2,7 +2,7 @@
    统一导航栏（citerev/web 全站共用）
    - 根据当前页面 URL 自动高亮 active 项，无需在各页面手动加 class。
    - 使用 DOM 构建注入，兼容 file:// 与 https:// 两种打开方式（不依赖 fetch）。
-   - 自动读取 localStorage["cr_current_file"] 显示当前导入的 Word 文件名，
+   - 自动读取 localStorage["cr_current_file"] 显示当前导入的 Word / PDF 文件名，
      并在同域其他页面/页签写入时实时更新。
    - 若本页面位于 iframe 内（选项卡模式），则不重复注入导航栏。
    修改导航结构 / 链接 / 文案 / 品牌名，只需改本文件一处。

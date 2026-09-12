@@ -785,15 +785,26 @@ const sensHints={
 sensitivityEl.addEventListener("change",()=>{sensHintEl.textContent=sensHints[sensitivityEl.value]||"";});
 document.getElementById("btnExample").addEventListener("click",()=>{setRefsText(sample);refsEl.focus();});
 document.getElementById("clearRefs").addEventListener("click",()=>{refsEl.innerHTML="";updateCount();refsEl.focus();});
-// 导入 Word：读取 .docx → 纯前端解析为正文 → 仅抽取参考文献列表填入文本框（sliceArticle 定位 References 小节）
+// 导入 Word / PDF → 仅抽取参考文献列表填入文本框（sliceArticle 定位 References 小节）
 const wordFileEl=document.getElementById("wordFile");
 const importMsg=document.getElementById("importMsg");
 document.getElementById("importWord").addEventListener("click",()=>wordFileEl.click());
 wordFileEl.addEventListener("change",async()=>{
   const file=wordFileEl.files&&wordFileEl.files[0];
   if(!file)return;
+  const isPdf=/\.pdf$/i.test(file.name||"")||file.type==="application/pdf";
   importMsg.textContent="正在读取 "+file.name+" …";
   try{
+    if(isPdf){
+      const documentData=await CitationPdfImporter.parse(file,(page,total)=>{importMsg.textContent=`正在本地解析 PDF：${page} / ${total} 页…`;});
+      const blocks=documentData.referenceBlocks||[];
+      if(!blocks.length){importMsg.textContent="PDF 已读取，但未识别到参考文献列表";wordFileEl.value="";return;}
+      setRefsHtml(blocks.map(block=>`<div>${block.html||escapeEditorHtml(block.text||"")}</div>`).join(""));
+      importMsg.textContent=`已导入 ${file.name} 的参考文献列表（${blocks.length} 条，来自 ${documentData.pageCount} 页 PDF）`;
+      try{localStorage.setItem("cr_current_file",file.name);}catch(_){}
+      wordFileEl.value="";
+      return;
+    }
     const buf=await file.arrayBuffer();
     const {paragraphs}=await extractDocxText(buf);
     if(!paragraphs||!paragraphs.length){importMsg.textContent="文件已读取，但未提取到参考文献（可能是图片型或加密文档）";return;}

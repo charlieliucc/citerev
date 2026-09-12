@@ -14,6 +14,7 @@
   function apply(d) {
     applying = true;
     if (window.CitationReviewerPage?.applyWorkspaceDocument) window.CitationReviewerPage.applyWorkspaceDocument(d);
+    if (window.CitationReportPage?.applyWorkspaceDocument) window.CitationReportPage.applyWorkspaceDocument(d);
     const body = document.getElementById('txtBody');
     const editor = document.getElementById('editor');
     const report = document.getElementById('documentInput');
@@ -21,7 +22,7 @@
     const distribution = document.getElementById('docInput');
     if (body && !window.CitationReviewerPage) { body.value = d.bodyText || ''; body.dispatchEvent(new Event('input', { bubbles: true })); }
     if (editor && !window.CitationReviewerPage) { editor.innerHTML = refsHtml(d); editor.dispatchEvent(new Event('input', { bubbles: true })); }
-    if (report) { report.value = d.fullText || [d.bodyText, d.referencesText].filter(Boolean).join('\n\nReferences\n'); report.dispatchEvent(new Event('input', { bubbles: true })); }
+    if (report && !window.CitationReportPage) { report.value = d.fullText || [d.bodyText, d.referencesText].filter(Boolean).join('\n\nReferences\n'); report.dispatchEvent(new Event('input', { bubbles: true })); }
     if (refs) {
       if (refs.isContentEditable && window.CitationVerifierEditor) window.CitationVerifierEditor.setHtml(refsHtml(d));
       else if (refs.isContentEditable) refs.textContent = d.referencesText || d.fullText || '';

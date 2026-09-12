@@ -121,7 +121,7 @@
   }
   function run() {
     const text = input.value.trim();
-    if (!text) { setMsg('请先粘贴内容或导入 Word 文档。', true); return; }
+    if (!text) { setMsg('请先粘贴内容或导入 Word / PDF 文档。', true); return; }
     if (!window.CitationReferenceSplitter || !window.CitationReportEngine?.distributionAnalysis) { setMsg('分析模块未加载，请刷新页面后重试。', true); return; }
     try {
       setMsg('正在分析分布……');
@@ -159,8 +159,9 @@
   $('btnImport').addEventListener('click', () => $('fileInput').click());
   $('fileInput').addEventListener('change', async function () {
     const file = this.files && this.files[0]; if (!file) return;
+    const isPdf = /\.pdf$/i.test(file.name || '') || file.type === 'application/pdf';
     setMsg('正在读取 ' + file.name + ' …');
-    try { const doc = await CitationReportEngine.parseDocx(file); input.value = doc.text || [doc.body, doc.references].filter(Boolean).join('\n\nReferences\n'); input.dispatchEvent(new Event('input', {bubbles:true})); setMsg('已导入 ' + file.name + '，点击「分析分布」。'); }
+    try { const doc = isPdf ? await CitationPdfImporter.parse(file, (page,total) => setMsg('正在本地解析 PDF：' + page + ' / ' + total + ' 页…')) : await CitationReportEngine.parseDocx(file); input.value = doc.text || [doc.body, doc.references].filter(Boolean).join('\n\nReferences\n'); input.dispatchEvent(new Event('input', {bubbles:true})); setMsg('已导入 ' + file.name + (isPdf ? '，已读取分页和字体信息' : '') + '，点击「分析分布」。'); }
     catch (error) { setMsg('导入失败：' + (error.message || error), true); }
     this.value = '';
   });

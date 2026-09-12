@@ -53,7 +53,9 @@ CiteRev 由网页版、macOS 菜单栏原生版、Windows Electron 轻量版三�
 纯前端网页应用，全部 HTML / CSS / JS。
 - 全文与格式检测 **完全在浏览器本地完成**，文档不上传服务器。
 - 真伪检查仅在用户明确操作后，向 Crossref / OpenAlex 公开 API 发送检索请求；输入文本仅在浏览器内解析。
-- 支持导入 `.docx` Word 文档，或直接粘贴论文全文 / 参考文献列表。
+- 支持导入 `.docx` Word 文档和带文本层的 `.pdf`（例如由 Word 导出的 PDF），或直接粘贴论文全文 / 参考文献列表。
+- PDF 在浏览器内由本地打包的 PDF.js 解析并动态渲染原页面；检测结果仍以 HTML 批注卡片展示，点击卡片可跳转到原 PDF 页并高亮对应区域。
+- PDF 导入会保留可识别的斜体/粗体、物理页码和跨页参考文献来源坐标。扫描件目前不执行 OCR。
 - 通过严格的 Content-Security-Policy 约束脚本与连接来源，编辑器对粘贴内容做白名单标签清洗，避免恶意内容注入。
 
 ### macOS 菜单栏工具（`macOS/`，Swift 原生）
@@ -88,6 +90,7 @@ citerev/
 │   ├── report.html          # 一键分析报告
 │   ├── about.html           # 关于
 │   ├── citation-core.js     # 基础工具与引用解析核心
+│   ├── pdf-import.js        # PDF 文本、格式、页码与原文坐标解析
 │   ├── reference-splitter.js# 参考文献自动切分
 │   ├── report-engine.js     # 报告生成引擎
 │   ├── verifier/            # 真伪检查逻辑与样式
@@ -103,7 +106,7 @@ citerev/
 ## 快速开始（Web 版）
 
 1. 打开 CiteRev 网页版（或本地用任意静态服务器托管 `web/` 目录）。
-2. 在首页粘贴论文全文，或粘贴参考文献列表；也可点击「导入 Word 文档」载入 `.docx`。
+2. 在首页粘贴论文全文，或粘贴参考文献列表；也可点击「导入 Word / PDF」载入 `.docx` 或带文本层的 `.pdf`。
 3. 点击顶部导航进入对应功能：
    - **全文检查** / **格式检查**：本地即时分析，结果直接展示。
    - **真伪检查**：点击「开始查验」，逐条比对 Crossref / OpenAlex（需联网）。
@@ -115,6 +118,8 @@ cd web
 python3 -m http.server 8080
 # 浏览器访问 http://localhost:8080
 ```
+
+PDF 支持使用随网页一同发布的 PDF.js 6.3.289，文件位于 `web/vendor/pdfjs/`，采用 Apache License 2.0。PDF 文件只在当前浏览器页面中处理；刷新页面后若要继续查看原 PDF 页面，需要重新导入文件。
 
 ---
 

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'" />
   <meta name="referrer" content="no-referrer" />
   <title>引用审查网页版 CiteRev Web</title>
-  <link rel="stylesheet" href="common.css?v=20260818-embed-subnav">
+  <link rel="stylesheet" href="common.css?v=20260911-pdf1">
   <link rel="stylesheet" href="nav.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
 
   <div class="subnav">
     <div class="td-actions"><span class="action-group" aria-label="文档操作">
-      <button class="td-btn" id="btnImport">导入 Word 文档</button>
+      <button class="td-btn" id="btnImport">导入 Word / PDF</button>
       <span class="file-name" id="fileName" hidden></span>
       <button class="td-btn" id="btnClear">清空</button>
       </span><span class="action-separator" aria-hidden="true"></span><span class="action-group" aria-label="检测操作">
@@ -24,7 +24,7 @@
       </span><span class="action-separator" aria-hidden="true"></span><span class="action-group" aria-label="页面设置">
       <a class="td-btn" href="about.html">关于</a>
       </span>
-      <input type="file" id="fileInput" accept=".docx" style="display:none" />
+      <input type="file" id="fileInput" accept=".docx,.pdf,application/pdf" style="display:none" />
     </div>
   </div>
 
@@ -54,7 +54,7 @@
             <button class="td-btn small" id="btnClearFormat" title="清除格式">清除格式</button>
             <button class="td-btn small" id="btnPastePlain" title="将剪贴板内容以纯文本粘贴">粘贴纯文本</button>
           </div>
-          <div class="hint">每行/每段 1 条参考文献。建议从 Word/Google Docs 直接复制（斜体可保留）：APA 7 中期刊名、卷号、书名/报告名、网页标题通常需要<b>斜体</b>。导入 Word 文档会自动拆分正文与参考文献并保留斜体。</div>
+          <div class="hint">每行/每段 1 条参考文献。建议从 Word/Google Docs 直接复制（斜体可保留）：APA 7 中期刊名、卷号、书名/报告名、网页标题通常需要<b>斜体</b>。导入 Word / PDF 会自动拆分正文与参考文献并保留可识别的斜体。</div>
           <div id="editor" contenteditable="true" spellcheck="false" data-placeholder="在这里粘贴参考文献（每行一条）…
 示例：Wang, H., & Li, M. (2021). Title. Journal, 1(2), 1–10."></div>
         </div>
@@ -116,9 +116,10 @@
   </button>
 
   <script src="./reference-splitter.js"></script>
+  <script src="./pdf-import.js?v=20260911-pdf2"></script>
   <script src="./citation-core.js"></script>
   <script src="./apa7-citation-rules.js"></script>
-  <script src="./app.js?v=20260818-split-ref-comments"></script>
+  <script src="./app.js?v=20260911-pdf5"></script>
 
 <!-- 关于（与 macOS 版本关于页内容一致） -->
 <div class="about-overlay" id="aboutOverlay">
@@ -138,7 +139,7 @@
 
       <div class="about-section">
         <h4>功能简介</h4>
-        <p>自动扫描当前 Word 文档中的<strong>文中引用</strong>与<strong>参考文献列表</strong>，识别引用一致性、格式与结构问题并汇总，支持按分类筛选、在文中定位、按次数 / 年份 / 期刊等维度统计。目前<strong>仅支持 APA 7th</strong> 风格，后续将开放其他引用风格。</p>
+        <p>自动扫描导入或粘贴的论文<strong>文中引用</strong>与<strong>参考文献列表</strong>，识别引用一致性、格式与结构问题并汇总，支持按分类筛选、在原 Word / PDF 中定位、按次数 / 年份 / 期刊等维度统计。目前<strong>仅支持 APA 7th</strong> 风格，后续将开放其他引用风格。</p>
       </div>
 
       <div class="about-section">

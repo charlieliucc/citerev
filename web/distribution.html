@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'" />
   <meta name="referrer" content="no-referrer" />
   <title>文献分布分析 · CiteRev</title>
   <link rel="stylesheet" href="report.css" />
@@ -72,8 +72,8 @@
       <textarea id="docInput" placeholder="粘贴论文全文，或 References 列表……"></textarea>
       <div class="dist-actions">
         <button class="secondary" id="btnSample" type="button">载入样例</button>
-        <button class="secondary" id="btnImport" type="button">导入 Word 文档</button>
-        <input id="fileInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <button class="secondary" id="btnImport" type="button">导入 Word / PDF</button>
+        <input id="fileInput" type="file" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
         <button class="primary" id="btnRun" type="button">分析分布</button>
       </div>
       <p class="dist-message" id="distMessage">等待输入。</p>
@@ -124,9 +124,10 @@
   </div>
 
   <script src="reference-splitter.js"></script>
+  <script src="pdf-import.js?v=20260911-pdf2"></script>
   <script src="citation-core.js"></script>
   <script src="report-engine.js?v=20260818-exact-years"></script>
-  <script src="distribution.js?v=20260818-all-pie-no-year-top"></script>
+  <script src="distribution.js?v=20260911-pdf1"></script>
   <script src="workspace-bridge.js?v=20260818-distribution"></script>
 </body>
 </html>

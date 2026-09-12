@@ -173,6 +173,54 @@ ol.doc-refs li em{ font-style: italic; }
 .doc-view-bar{ display:flex; justify-content:flex-start; padding: 4px 0 10px; }
 .doc-view-bar .td-btn.small{ padding: 4px 10px; font-size: 12px; }
 
+/* ---------- PDF 原文视图：页面渲染 + 可选中文字层 + 定位高亮层 ---------- */
+.pdf-source-view{ margin:0 -34px -28px; }
+.pdf-source-view[hidden]{ display:none; }
+.pdf-source-toolbar{
+  position:sticky; top:-48px; z-index:8;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  min-height:42px; padding:6px 10px;
+  border:1px solid var(--td-border); border-radius:8px 8px 0 0;
+  background:rgba(255,255,255,.96); color:var(--td-muted); font-size:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.pdf-source-toolbar button{
+  min-width:30px; height:28px; padding:0 8px; border:1px solid var(--td-border);
+  border-radius:6px; background:#fff; color:var(--td-text); cursor:pointer; font-size:16px;
+}
+.pdf-source-toolbar button:hover{ background:#f5f7fa; border-color:#c9cdd4; }
+.pdf-toolbar-gap{ width:18px; }
+.pdf-page-stage{ overflow:auto; padding:20px 14px 32px; background:#e9edf3; text-align:center; }
+.pdf-page-surface{
+  position:relative; margin:0 auto; background:#fff; text-align:left;
+  box-shadow:0 2px 14px rgba(31,35,41,.18); overflow:hidden;
+}
+.pdf-page-surface canvas{ position:absolute; inset:0; display:block; }
+.pdf-text-layer{
+  position:absolute; inset:0; overflow:clip; line-height:1; text-align:initial;
+  letter-spacing:normal; word-spacing:normal; transform-origin:0 0; z-index:2;
+  -webkit-text-size-adjust:none; text-size-adjust:none; forced-color-adjust:none;
+  --min-font-size:1; --text-scale-factor:calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv:calc(1 / var(--min-font-size));
+}
+.pdf-text-layer span,.pdf-text-layer br{
+  position:absolute; color:transparent; white-space:pre; cursor:text; transform-origin:0 0;
+  -webkit-user-select:text; user-select:text;
+}
+.pdf-text-layer > :not(.markedContent),.pdf-text-layer .markedContent span:not(.markedContent){
+  z-index:1; --font-height:0; --scale-x:1; --rotate:0deg;
+  font-size:calc(var(--text-scale-factor) * var(--font-height));
+  transform:rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.pdf-text-layer .markedContent{ display:contents; }
+.pdf-text-layer ::selection{ background:rgba(37,99,235,.25); color:transparent; }
+.pdf-highlight-layer{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+.pdf-source-highlight{
+  position:absolute; border-radius:2px; background:rgba(255,205,56,.42);
+  box-shadow:inset 0 -2px 0 #d99500,0 0 0 1px rgba(217,149,0,.22);
+  animation:pdfSourceFlash .8s ease;
+}
+@keyframes pdfSourceFlash{ from{ background:rgba(255,183,0,.75); } to{ background:rgba(255,205,56,.42); } }
+
 /* ---------- 编辑区（输入源） ---------- */
 #editArea label{ display:block; font-size:13px; font-weight:600; color:var(--td-text); margin: 8px 0 6px; }
 #editArea .hint{ font-size:12px; color:var(--td-muted); line-height:1.5; margin: 0 0 8px; }
@@ -366,6 +414,8 @@ textarea#txtBody:focus{ border-color: var(--td-blue); }
 
   .td-doc-scroll{ padding: 12px; height: auto; }
   .td-page{ padding: 20px 16px; border-radius: 8px; box-shadow: none; min-height: auto; }
+  .pdf-source-view{ margin:0; }
+  .pdf-page-stage{ padding:12px 6px 24px; }
   .doc-title{ font-size: 18px; }
   .doc-section{ font-size: 14px; line-height: 1.8; }
 

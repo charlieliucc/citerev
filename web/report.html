@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://api.crossref.org https://api.openalex.org; script-src 'self'; style-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; media-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'" />
   <meta name="referrer" content="no-referrer" />
   <title>一键综合分析 · CiteRev</title>
   <link rel="stylesheet" href="report.css?v=20260818-embed-subnav" />
@@ -16,7 +16,7 @@
   <div class="tool-subnav">
     <div class="actions global-actions">
       <span class="action-group" aria-label="文档操作">
-        <button id="importWord" class="secondary">导入 Word</button>
+        <button id="importWord" class="secondary">导入 Word / PDF</button>
         <button id="loadSample" class="secondary">载入示例</button>
         <button id="clearInput" class="secondary">清空</button>
       </span>
@@ -24,7 +24,7 @@
       <span class="action-group" aria-label="分析操作">
         <button id="runReport" class="primary">一键生成报告 →</button>
       </span>
-      <input id="wordFile" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
+      <input id="wordFile" type="file" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden />
     </div>
   </div>
 
@@ -34,7 +34,7 @@
         <div><span class="input-kicker">FULL CITATION AUDIT</span><h2>一键综合分析</h2><p>粘贴论文全文，同时检查全文一致性、APA 7 格式、公开来源真伪和引用分布；请保留 References / Bibliography / 参考文献标题。</p></div>
         <span id="inputStats">等待输入</span>
       </div>
-      <textarea id="documentInput" spellcheck="false" placeholder="粘贴论文全文，或导入 Word 文档……"></textarea>
+      <textarea id="documentInput" spellcheck="false" placeholder="粘贴论文全文，或导入 Word / PDF 文档……"></textarea>
       <p id="inputMessage" class="message" aria-live="polite"></p>
     </section>
 
@@ -74,9 +74,10 @@
   </main>
 
   <script src="reference-splitter.js"></script>
+  <script src="pdf-import.js?v=20260911-pdf2"></script>
   <script src="citation-core.js"></script>
   <script src="apa7-citation-rules.js"></script>
   <script src="report-engine.js?v=20260817-2"></script>
-  <script src="report.js?v=20260817-4"></script>
+  <script src="report.js?v=20260911-pdf1"></script>
 </body>
-<script src="workspace-bridge.js"></script></html>
+<script src="workspace-bridge.js?v=20260911-pdf1"></script></html>
