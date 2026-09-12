@@ -27,13 +27,18 @@ enum AppResources {
     }
 
     /// Web verifier 的根目录。打包后位于 Contents/Resources/web；开发模式下
-    /// 兼容从仓库根目录或 macOS/ 目录执行 `swift run`。
+    /// 从独立的 citerev-web 同级仓库读取，也可通过 CITEREV_WEB_DIR 指定路径。
     static var webDirectory: URL? {
         let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-        let candidates = [
+        var candidates = [URL]()
+        if let configured = ProcessInfo.processInfo.environment["CITEREV_WEB_DIR"], !configured.isEmpty {
+            candidates.append(URL(fileURLWithPath: configured, isDirectory: true))
+        }
+        candidates += [
             baseURL.appendingPathComponent("web", isDirectory: true),
-            cwd.appendingPathComponent("web", isDirectory: true),
-            cwd.deletingLastPathComponent().appendingPathComponent("web", isDirectory: true),
+            cwd.appendingPathComponent("citerev-web", isDirectory: true),
+            cwd.deletingLastPathComponent().appendingPathComponent("citerev-web", isDirectory: true),
+            cwd.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("citerev-web", isDirectory: true),
         ]
         return candidates.first {
             FileManager.default.fileExists(atPath: $0.appendingPathComponent("verify.html").path)

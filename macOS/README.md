@@ -136,7 +136,7 @@ word-citation-menubar-swift/
 │   ├── export-word.applescript
 │   ├── locate.applescript     # 定位首个命中
 │   └── locate-nth.applescript # 定位第 N 个命中（统计上一个/下一个）
-├── ../web/                    # Web verifier 唯一源码，make app 时复制进 App
+├── ../../citerev-web/         # 独立 Web 仓库，make app 时复制进 App
 └── dist/                      # 打包产物（make app 生成）
     └── 引用审查.app
 ```
@@ -153,6 +153,8 @@ make app
 # 3. 清理
 make clean
 ```
+
+默认要求将 [`citerev-web`](https://github.com/charlieliucc/citerev-web) 克隆到本仓库的同级目录。若放在其他位置，打包时使用 `make app WEB_DIR=/path/to/citerev-web`，开发运行时设置 `CITEREV_WEB_DIR=/path/to/citerev-web`。
 
 ## 分发
 

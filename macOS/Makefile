@@ -14,6 +14,7 @@ BUNDLE_ID := com.ccliu.citerev
 BUILD_DIR := .build
 DIST_DIR := dist
 APP_BUNDLE := $(DIST_DIR)/$(APP_NAME).app
+WEB_DIR ?= ../../citerev-web
 
 SWIFT := swift
 
@@ -42,9 +43,10 @@ app: build
 	cp "$(BUILD_DIR)/release/CitationMenubar" "$(APP_BUNDLE)/Contents/MacOS/CitationMenubar"
 	# 复制资源（JS 引擎 + AppleScript + 驱动脚本）
 	cp -R Resources/* "$(APP_BUNDLE)/Contents/Resources/"
-	# Web 是真伪检查的唯一源码；构建时复制到 App，排除开发备份目录。
+	# Web 源码位于同级 citerev-web 仓库；构建时复制到 App。
+	@test -f "$(WEB_DIR)/verify.html" || (echo "未找到 CiteRev Web：$(WEB_DIR)；请克隆 https://github.com/charlieliucc/citerev-web.git 或通过 WEB_DIR 指定路径。"; exit 1)
 	mkdir -p "$(APP_BUNDLE)/Contents/Resources/web"
-	rsync -a --delete --exclude 'backups/' ../web/ "$(APP_BUNDLE)/Contents/Resources/web/"
+	rsync -a --delete --exclude '.git/' --exclude 'backups/' "$(WEB_DIR)/" "$(APP_BUNDLE)/Contents/Resources/web/"
 	# 写入 Info.plist
 	@/usr/libexec/PlistBuddy -c "Add :CFBundleName string $(APP_NAME)" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleName $(APP_NAME)" "$(APP_BUNDLE)/Contents/Info.plist"
 	@/usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $(BUNDLE_ID)" "$(APP_BUNDLE)/Contents/Info.plist" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $(BUNDLE_ID)" "$(APP_BUNDLE)/Contents/Info.plist"
